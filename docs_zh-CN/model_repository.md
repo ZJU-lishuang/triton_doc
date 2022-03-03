@@ -1,52 +1,16 @@
-<!--
-# Copyright (c) 2018-2021, NVIDIA CORPORATION. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 模型存储库
 
-# Model Repository
+Triton推理服务器为服务器声明时指定的一个或多个模型存储库中的模型提供服务。当Triton运行时，可以按照[模型管理](model_management.md)中的说明修改所服务的模型。
 
-The Triton Inference Server serves models from one or more model
-repositories that are specified when the server is stated. While
-Triton is running, the models being served can be modified as
-described in [Model Management](model_management.md).
+## 存储库布局
 
-## Repository Layout
-
-These repository paths are specified when Triton is started using the
---model-repository option. The --model-repository option can be
-specified multiple times to included models from multiple
-repositories. The directories and files that compose a model
-repository must follow a required layout. Assuming a repository path
-is specified as follows.
+这些存储库的路径是在使用--model-repository选项启动Triton时指定的。--model-repository选项可以多次指定以包含来自多个存储库的模型。构成模型存储库的目录和文件必须遵循所需的布局。假设存储库路径指定如下。
 
 ```bash
 $ tritonserver --model-repository=<model-repository-path>
 ```
 
-The corresponding repository layout must be:
+相应的存储库布局必须是:
 
 ```
   <model-repository-path>/
@@ -69,46 +33,25 @@ The corresponding repository layout must be:
     ...
 ```
 
-Within the top-level model repository directory there must be zero or
-more <model-name> sub-directories. Each of the <model-name>
-sub-directories contains the repository information for the
-corresponding model. The config.pbtxt file describes the [model
-configuration](model_configuration.md) for the model. For some models,
-config.pbtxt is required while for others it is optional. See
-[Auto-Generated Model
-Configuration](#auto-generated-model-configuration) for more
-information.
+在顶级模型存储库目录中必须有零个或多个`<model-name>`子目录。每个`<model-name>`子目录都包含相应模型的存储库信息。config.pbtxt文件描述了模型的[模型配置](model_configuration.md)。对于某些模型，config.pbtxt是必需的，而对于其他模型是可选的。参阅[自动生成的模型配置](#auto-generated-model-configuration)获取详细信息。
 
-Each <model-name> directory must have at least one numeric
-sub-directory representing a version of the model.  For more
-information about how the model versions are handled by Triton see
-[Model Versions](#model-versions).  Each model is executed by a
-specific
-[backend](https://github.com/triton-inference-server/backend/blob/main/README.md).
-Within each version sub-directory there must be the files required by
-that backend. For example, models that use framework backends such as
-TensorRT, PyTorch, ONNX, OpenVINO and TensorFlow must provide the
-[framework-specific model files](#model-files).
+每个`<model-name>`目录必须至少有一个数字子目录，表示模型的一个版本。有关Triton如何处理模型版本的更多信息，请参见[模型版本](#model-versions)。每个模型都由特定的[后端](https://github.com/triton-inference-server/backend/blob/main/README.md)执行。在每个版本子目录中必须有该后端所需的文件。例如，使用框架后端如TensorRT, PyTorch, ONNX, OpenVINO和TensorFlow的模型必须提供[框架特定的模型文件](#model-files)。
 
-## Model Repository Locations
+## 模型存储库的位置
 
-Triton can access models from one or more locally accessible file
-paths, from Google Cloud Storage, from Amazon S3, and from Azure
-Storage.
+Triton可以从一个或多个本地可访问的文件路径、谷歌云存储、Amazon S3和Azure存储中访问模型。
 
-### Local File System
+### 本地文件系统
 
-For a locally accessible file-system the absolute path must be
-specified.
+对于本地可访问的文件系统，必须指定绝对路径。
 
 ```bash
 $ tritonserver --model-repository=/path/to/model/repository ...
 ```
 
-### Google Cloud Storage
+### 谷歌云存储
 
-For a model repository residing in Google Cloud Storage, the
-repository path must be prefixed with gs://.
+对于驻留在谷歌云存储中的模型存储库，存储库路径必须以gs://作为前缀。
 
 ```bash
 $ tritonserver --model-repository=gs://bucket/path/to/model/repository ...
@@ -116,92 +59,57 @@ $ tritonserver --model-repository=gs://bucket/path/to/model/repository ...
 
 ### S3
 
-For a model repository residing in Amazon S3, the path must be
-prefixed with s3://.
+对于驻留在Amazon S3中的模型存储库，路径必须以s3://作为前缀。
 
 ```bash
 $ tritonserver --model-repository=s3://bucket/path/to/model/repository ...
 ```
 
-For a local or private instance of S3, the prefix s3:// must be
-followed by the host and port (separated by a semicolon) and
-subsequently the bucket path.
+对于S3的本地或私有实例，前缀s3://后面必须跟主机和端口(以分号分隔)，然后是bucket路径。
 
 ```bash
 $ tritonserver --model-repository=s3://host:port/bucket/path/to/model/repository ...
 ```
 
-By default, Triton uses HTTP to communicate with your instance of S3. If 
-your instance of S3 supports HTTPS and you wish for Triton to use the HTTPS
-protocol to communicate with it, you can specify the same in the model 
-repository path by prefixing the host name with https://.
+默认情况下，Triton使用HTTP与S3实例通信。如果您的S3实例支持HTTPS，并且您希望Triton使用HTTPS协议与它通信，那么您可以在模型存储库路径中通过在主机名前加上https://来指定相同的协议。
 
 ```bash
 $ tritonserver --model-repository=s3://https://host:port/bucket/path/to/model/repository ...
 ```
 
-When using S3, the credentials and default region can be passed by
-using either the [aws
-config](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
-command or via the respective [environment
-variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html).
-If the environment variables are set they will take a higher priority
-and will be used by Triton instead of the credentials set using the
-aws config command.
+在使用S3时，凭据和默认区域可以通过使用[aws config](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)命令或通过相应的[环境变量](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)传递。如果设置了环境变量，它们将具有更高的优先级，Triton将使用它们，而不是使用aws config命令设置凭据。
 
 ### Azure Storage
 
-For a model repository residing in Azure Storage, the repository path
-must be prefixed with as://.
+对于Azure Storage中的模型存储库，存储库路径必须以as://作为前缀。
 
 ```bash
 $ tritonserver --model-repository=as://account_name/container_name/path/to/model/repository ...
 ```
 
-When using Azure Storage, you must set the `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY`
-environment variables to an account that has access to the Azure Storage repository.
+使用Azure Storage时，您必须将`AZURE_STORAGE_ACCOUNT`和`AZURE_STORAGE_KEY`环境变量设置为能够访问Azure Storage存储库的帐户。
 
-If you don't know your `AZURE_STORAGE_KEY` and have your Azure CLI correctly configured,
-here's an example of how to find a key corresponding to your `AZURE_STORAGE_ACCOUNT`:
+如果你不知道你的`AZURE_STORAGE_KEY`，也没有正确配置你的Azure CLI，下面是一个如何找到你的`AZURE_STORAGE_ACCOUNT`对应的密钥的例子:
 
 ```bash
 $ export AZURE_STORAGE_ACCOUNT="account_name"
 $ export AZURE_STORAGE_KEY=$(az storage account keys list -n $AZURE_STORAGE_ACCOUNT --query "[0].value")
 ```
 
-## Model Versions
+## 模型版本
 
-Each model can have one or more versions available in the model
-repository. Each version is stored in its own, numerically named,
-subdirectory where the name of the subdirectory corresponds to the
-version number of the model. The subdirectories that are not
-numerically named, or have names that start with zero (0) will be
-ignored. Each model configuration specifies a [version
-policy](model_configuration.md#version-policy) that controls which of
-the versions in the model repository are made available by Triton at
-any given time.
+在模型存储库中，每个模型可以有一个或多个可用版本。每个版本都存储在自己的数字命名的子目录中，子目录的名称对应于模型的版本号。不是数字命名的子目录或名称以0开头的子目录将被忽略。每个模型配置都指定了一个[版本策略](model_configuration.md#version-policy)，该策略控制Triton在任何给定时间提供模型存储库中的哪些版本。
 
-## Model Files
+## 模型文件
 
-The contents of each model version sub-directory is determined by the
-type of the model and the requirements of the
-[backend](https://github.com/triton-inference-server/backend/blob/main/README.md)
-that supports the model.
+每个模型版本子目录的内容由模型的类型和支持该模型的[后端](https://github.com/triton-inference-server/backend/blob/main/README.md)的要求决定。
 
-### TensorRT Models
+### TensorRT模型
+TensorRT模型定义称为*Plan*。TensorRT Plan是一个单独的文件，默认情况下必须命名为model.plan。这个默认名称可以在[模型配置](model_configuration.md)中使用*default_model_filename*属性重写。
 
-A TensorRT model definition is called a *Plan*. A TensorRT Plan is a
-single file that by default must be named model.plan. This default
-name can be overridden using the *default_model_filename* property in
-the [model configuration](model_configuration.md).
+TensorRT Plan是特定于GPU的[CUDA计算能力](https://developer.nvidia.com/cuda-gpus)。因此，TensorRT模型将需要在[模型配置](model_configuration.md)中设置*cc_model_filenames*属性，将每个Plan文件与相应的计算能力关联起来。
 
-A TensorRT Plan is specific to a GPU's [CUDA Compute
-Capability](https://developer.nvidia.com/cuda-gpus).  As a result,
-TensorRT models will need to set the *cc_model_filenames* property in
-the [model configuration](model_configuration.md) to associate each
-Plan file with the corresponding Compute Capability.
-
-A minimal model repository for a TensorRT model is:
+TensorRT模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -211,22 +119,13 @@ A minimal model repository for a TensorRT model is:
         model.plan
 ```
 
-### ONNX Models
+### ONNX模型
 
-An ONNX model is a single file or a directory containing multiple
-files. By default the file or directory must be named model.onnx.
-This default name can be overridden using the *default_model_filename*
-property in the [model configuration](model_configuration.md).
+ONNX模型是单个文件或包含多个文件的目录。默认情况下，文件或目录必须命名为model.onnx。这个默认名称可以在[模型配置](model_configuration.md)中使用*default_model_filename*属性重写。
 
-Triton supports all ONNX models that are supported by the version of
-[ONNX Runtime](https://github.com/Microsoft/onnxruntime) being used by
-Triton. Models will not be supported if they use a [stale ONNX opset
-version](https://github.com/Microsoft/onnxruntime/blob/master/docs/Versioning.md#version-matrix)
-or [contain operators with unsupported
-types](https://github.com/microsoft/onnxruntime/issues/1122).
+Triton支持被Triton使用的[ONNX Runtime](https://github.com/Microsoft/onnxruntime)版本所支持的所有ONNX模型。如果模型使用[陈旧的ONNX opset版本](https://github.com/Microsoft/onnxruntime/blob/master/docs/Versioning.md#version-matrix)或[包含不支持类型的操作符](https://github.com/microsoft/onnxruntime/issues/1122)，则不支持模型。
 
-A minimal model repository for a ONNX model contained in a single file
-is:
+包含单个文件的ONNX模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -236,12 +135,7 @@ is:
         model.onnx
 ```
 
-An ONNX model composed from multiple files must be contained in a
-directory.  By default this directory must be named model.onnx but can
-be overridden using the *default_model_filename* property in the
-[model configuration](model_configuration.md). The main model file
-within this directory must be named model.onnx. A minimal model
-repository for a ONNX model contained in a directory is:
+由多个文件组成的ONNX模型必须包含在一个目录中。默认情况下，这个目录必须命名为model.onnx，但是可以使用[模型配置](model_configuration.md)中的*default_model_filename*属性重写。这个目录中的主模型文件必须命名为model.onnx。一个包含在目录中的ONNX模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -253,16 +147,11 @@ repository for a ONNX model contained in a directory is:
            <other model files>
 ```
 
-### TorchScript Models
+### TorchScript模型
 
-An TorchScript model is a single file that by default must be named
-model.pt. This default name can be overridden using the
-*default_model_filename* property in the [model
-configuration](model_configuration.md). It is possible that some
-models traced with different versions of PyTorch may not be supported
-by Triton due to changes in the underlying opset.
+一个TorchScript模型是一个单独的文件，默认情况下必须命名为model.pt。这个默认名称可以在[模型配置](model_configuration.md)中使用*default_model_filename*属性重写。由于底层opset的变化，使用不同版本的PyTorch追踪的一些模型可能不被Triton支持。
 
-A minimal model repository for a TorchScript model is:
+TorchScript模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -272,20 +161,13 @@ A minimal model repository for a TorchScript model is:
         model.pt
 ```
 
-### TensorFlow Models
+### TensorFlow模型
 
-TensorFlow saves models in one of two formats: *GraphDef* or
-*SavedModel*. Triton supports both formats.
+TensorFlow以两种格式保存模型:*GraphDef*或*SavedModel*。Triton支持这两种格式。
 
-A TensorFlow GraphDef is a single file that by default must be named
-model.graphdef. A TensorFlow SavedModel is a directory containing
-multiple files. By default the directory must be named
-model.savedmodel. These default names can be overridden using the
-*default_model_filename* property in the [model
-configuration](model_configuration.md).
+TensorFlow GraphDef是一个单独的文件，默认情况下必须命名为model.graphdef。一个TensorFlow SavedModel是一个包含多个文件的目录。默认情况下，目录必须命名为model.savedmodel。可以使用[模型配置](model_configuration.md)中的*default_model_filename*属性重写这些默认名称。
 
-A minimal model repository for a TensorFlow
-GraphDef model is:
+TensorFlow GraphDef模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -295,7 +177,7 @@ GraphDef model is:
         model.graphdef
 ```
 
-A minimal model repository for a TensorFlow SavedModel model is:
+TensorFlow SavedModel模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -306,14 +188,11 @@ A minimal model repository for a TensorFlow SavedModel model is:
            <saved-model files>
 ```
 
-### OpenVINO Models
+### OpenVINO模型
 
-An OpenVINO model is represented by two files, a *.xml and *.bin
-file. By default the *.xml file must be named model.xml. This default
-name can be overridden using the *default_model_filename* property in
-the [model configuration](model_configuration.md).
+一个OpenVINO模型由两个文件表示，一个*.xml文件和一个*.bin文件。默认情况下，*.xml文件必须命名为model.xml。这个默认名称可以在[模型配置](model_configuration.md)中使用*default_model_filename*属性重写。
 
-A minimal model repository for an OpenVINO model is:
+OpenVINO模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -324,16 +203,11 @@ A minimal model repository for an OpenVINO model is:
         model.bin
 ```
 
-### Python Models
+### Python模型
 
-The [Python
-backend](https://github.com/triton-inference-server/python_backend)
-allows you to run Python code as a model within Triton. By default the
-Python script must be named model.py but this default name can be
-overridden using the *default_model_filename* property in the [model
-configuration](model_configuration.md).
+[Python后端](https://github.com/triton-inference-server/python_backend)允许您在Triton中运行Python代码作为模型。默认情况下，Python脚本必须命名为model.py，但这个默认名称可以在[模型配置](model_configuration.md)中使用*default_model_filename*属性重写。
 
-A minimal model repository for a Python model is:
+Python模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
@@ -343,19 +217,11 @@ A minimal model repository for a Python model is:
         model.py
 ```
 
-### DALI Models
+### DALI模型
 
-The [DALI backend](https://github.com/triton-inference-server/dali_backend)
-allows you to run a [DALI pipeline](https://github.com/NVIDIA/DALI) as
-a model within Triton. In order to use this backend, you need to generate
-a file, by default named `model.dali`, and include it in your model repository.
-Please refer to [DALI backend documentation
-](https://github.com/triton-inference-server/dali_backend#how-to-use) for the
-description, how to generate `model.dali`. The default model file name can be
-overridden using the *default_model_filename* property in the
-[model configuration](model_configuration.md).
+[DALI后端](https://github.com/triton-inference-server/dali_backend)允许你在Triton中运行一个[DALI管道](https://github.com/NVIDIA/DALI)作为模型。为了使用这个后端，您需要生成一个文件，默认情况下命名为`model.dali`，并将其包含在您的模型库中。有关如何生成`model.dali`，请参考[DALI后端文档](https://github.com/triton-inference-server/dali_backend#how-to-use)的描述。可以使用[模型配置](model_configuration.md)中的*default_model_filename*属性重写默认的模型文件名。
 
-A minimal model repository for a DALI model is:
+DALI模型的最小模型存储库是:
 
 ```
   <model-repository-path>/
