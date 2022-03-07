@@ -1,59 +1,14 @@
-<!--
-# Copyright (c) 2018-2020, NVIDIA CORPORATION. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 模型配置
 
-# Model Configuration
+[模型存储库](model_repository.md)中的每个模型都必须包含一个模型配置，该配置提供了关于模型的必需和可选信息。通常，该配置在指定为[模型配置protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)的config.pbtxt文件中提供。在某些情况下，如[自动生成模型配置](#auto-generated-model-configuration)中所讨论的，模型配置可以由Triton自动生成，因此不需要显式提供。
 
-Each model in a [model repository](model_repository.md) must include a
-model configuration that provides required and optional information
-about the model. Typically, this configuration is provided in a
-config.pbtxt file specified as [ModelConfig
-protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto).
-In some cases, discussed in [Auto-Generated Model
-Configuraton](#auto-generated-model-configuration), the model
-configuration can be generated automatically by Triton and so does not
-need to be provided explicitly.
+本节描述了最重要的模型配置属性，但是也应该参考[模型配置protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)中的文档。
 
-This section describes the most important model configuration
-properties but the documentation in the [ModelConfig
-protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)
-should also be consulted.
+## 最小的模型配置
 
-## Minimal Model Configuration
+最小的模型配置必须指定[*platform*和/或*backend*属性](https://github.com/triton-inference-server/backend/blob/main/README.md#backends)，*max_batch_size*属性以及输入和输出的张量。
 
-A minimal model configuration must specify the [*platform* and/or
-*backend*
-properties](https://github.com/triton-inference-server/backend/blob/main/README.md#backends),
-the *max_batch_size* property, and the input and output tensors of the
-model.
-
-As an example consider a TensorRT model that has two inputs, *input0*
-and *input1*, and one output, *output0*, all of which are 16 entry
-float32 tensors. The minimal configuration is:
+例如，考虑一个TensorRT模型，有两个输入*input0*和*input1*，一个输出,*output0*，都是16个float32的张量。最小的配置如下：
 
 ```
   platform: "tensorrt_plan"
@@ -79,67 +34,27 @@ float32 tensors. The minimal configuration is:
   ]
 ```
 
-### Name, Platform and Backend
+### 名称，平台和后端
 
-The model configuration *name* property is optional. If the name of
-the model is not specified in the configuration it is assumed to be
-the same as the model repository directory containing the model. If
-*name* is specified it must match the name of the model repository
-directory containing the model.  The required values for *platform*
-and *backend* are described in the [backend
-documentation](https://github.com/triton-inference-server/backend/blob/main/README.md#backends).
+模型配置中*name*属性是可选的。如果模型的名称未在配置中指定，则假定它与包含模型的模型存储库目录相同。如果指定了*name*，它必须与包含模型的模型存储库目录的名称相匹配。*platform*和*backend*所需的值在 [后端文档](https://github.com/triton-inference-server/backend/blob/main/README.md#backends)中进行了描述。
 
-### Maximum Batch Size
+### 最大批处理大小
 
-The *max_batch_size* property indicates the maximum batch size that
-the model supports for the [types of
-batching](architecture.md#models-and-schedulers) that can be exploited
-by Triton. If the model's batch dimension is the first dimension, and
-all inputs and outputs to the model have this batch dimension, then
-Triton can use its [dynamic batcher](#dynamic-batcher) or [sequence
-batcher](#sequence-batcher) to automatically use batching with the
-model. In this case *max_batch_size* should be set to a value
-greater-or-equal-to 1 that indicates the maximum batch size that
-Triton should use with the model.
+*max_batch_size*属性表示模型支持的最大批处理大小，这些[批处理类型](architecture.md#models-and-schedulers)可以被 Triton 利用。如果模型的批处理维度是第一个维度，并且模型的所有输入和输出都具有此批处理维度，那么 Triton 可以使用其[动态批处理器](#dynamic-batcher)或[序列批处理器](#sequence-batcher)自动对模型使用批处理。在这种情况下，*max_batch_size*应设置为大于或等于1的值，该值表示Triton 应与模型一起使用的最大批量大小。
 
-For models that do not support batching, or do not support batching in
-the specific ways described above, *max_batch_size* must be set to
-zero.
+对于不支持批处理的模型，或者不支持上述特定方式的批处理，*max_batch_size* 必须设置为零。
 
-### Inputs and Outputs
+### 输入和输出
 
-Each model input and output must specify a name, datatype, and shape.
+每个模型输入和输出都必须指定名称、数据类型和形状。
 
-The name specified for an input or output tensor must match the name
-expected by the model. **TorchScript Naming Convention:** Due to the
-absence of names for inputs and outputs in a TorchScript model, the
-"name" attribute of both the inputs and outputs in the configuration
-must follow a specific naming convention i.e. "\<name\>__\<index\>".
-Where \<name\> can be any string and \<index\> refers to the position of
-the corresponding input/output. This means if there are two inputs and
-two outputs they must be named as: "INPUT__0", "INPUT__1" and
-"OUTPUT__0", "OUTPUT__1" such that "INPUT__0" refers to first input
-and INPUT__1 refers to the second input, etc.
+为输入或输出张量指定的名称必须与模型预期的名称匹配。**TorchScript 命名约定：** 由于TorchScript 模型中没有输入和输出名称，因此在配置中输入和输出的"name"属性必须遵循特定的命名约定，即"\<name\>__\<index\>"。其中\<name\>可以是任何字符串，而 \<index\> 指的是相应输入/输出的位置。这意味着如果有两个输入和两个输出，它们必须命名为：“INPUT__0”、“INPUT__1”和“OUTPUT__0”、“OUTPUT__1”，这样“INPUT__0”指的是第一个输入，INPUT__1 指的是第二个输入，等等。
 
-The datatypes allowed for input and output tensors varies based on the
-type of the model. Section [Datatypes](#datatypes) describes the
-allowed datatypes and how they map to the datatypes of each model
-type.
+输入和输出张量允许的数据类型因模型的类型而异。[数据类型](#datatypes)部分描述了允许的数据类型以及它们如何映射到每个类型的模型的数据类型。
 
-An input shape indicates the shape of an input tensor expected by the
-model and by Triton in inference requests. An output shape indicates
-the shape of an output tensor produced by the model and returned by
-Triton in response to an inference request. Both input and output
-shape must have rank greater-or-equal-to 1, that is, the empty shape
-**[ ]** is not allowed.
+输入形状表示模型和 Triton 在推理请求中预期的输入张量的形状。输出形状表示模型生成并由 Triton 响应推理请求返回的输出张量的形状。输入和输出形状的秩都必须大于或等于 1，即，不允许使用空形状 **[ ]** 。
 
-Input and output shapes are specified by a combination of
-*max_batch_size* and the dimensions specified by the input or output
-*dims* property. For models with *max_batch_size* greater-than 0, the
-full shape is formed as [ -1 ] + *dims*. For models with
-*max_batch_size* equal to 0, the full shape is formed as *dims*. For
-example, for the following configuration the shape of "input0" is [
--1, 16 ] and the shape of "output0" is [ -1, 4 ].
+输入和输出形状由*max_batch_size*和输入或输出*dims* 属性指定的尺寸组合来指定。对于*max_batch_size*大于 0 的模型，完整的形状为 [ -1 ] + *dims*。对于*max_batch_size*等于 0 的模型，完整的形状为*dims*。例如，对于以下配置，“input0”的形状为 [ -1, 16 ]，“output0”的形状为 [ -1, 4 ]。
 
 ```
   platform: "tensorrt_plan"
@@ -160,9 +75,7 @@ example, for the following configuration the shape of "input0" is [
   ]
 ```
 
-For a configuration that is identical except that *max_batch_size*
-equal to 0, the shape of "input0" is [ 16 ] and the shape of "output0"
-is [ 4 ].
+对于除了*max_batch_size*等于 0 之外，其它相同的配置，“input0”的形状为 [16]，“output0”的形状为 [4]。
 
 ```
   platform: "tensorrt_plan"
@@ -183,71 +96,25 @@ is [ 4 ].
   ]
 ```
 
-For models that support input and output tensors with variable-size
-dimensions, those dimensions can be listed as -1 in the input and
-output configuration. For example, if a model requires a 2-dimensional
-input tensor where the first dimension must be size 4 but the second
-dimension can be any size, the model configuration for that input
-would include *dims: [ 4, -1 ]*. Triton would then accept inference
-requests where that input tensor's second dimension was any value
-greater-or-equal-to 0. The model configuration can be more restrictive
-than what is allowed by the underlying model. For example, even though
-the framework model itself allows the second dimension to be any size,
-the model configuration could be specified as *dims: [ 4, 4 ]*. In
-this case, Triton would only accept inference requests where the input
-tensor's shape was exactly *[ 4, 4 ]*.
+对于支持可变尺寸输入和输出张量的模型，这些尺寸可以在输入和输出配置中列为 -1。例如，如果一个模型需要一个二维输入张量，其中第一个维度的大小必须为 4，但第二个维度可以是任何大小，则该模型的输入配置将是*dims: [ 4, -1 ]*。Triton 随后将接受输入张量的第二维是大于或等于0的任何值的推理请求。模型配置可能比基础模型所允许的限制更多。例如，即使模型框架本身允许第二维为任意大小，模型配置也可以指定为*dims: [ 4, 4 ]*。 在这种情况下，Triton 只会接受输入张量的形状正好是 *[ 4, 4 ]* 的推理请求。
 
-The [*reshape* property](#reshape) must be used if there is a mismatch
-between the input shape that Triton receives in an inference request
-and the input shape expected by the model. Similarly, the *reshape*
-property must be used if there is a mismatch between the output shape
-produced by the model and the shape that Triton returns in a response
-to an inference request.
+如果 Triton 在推理请求中接收到的输入形状与模型预期的输入形状不匹配，则必须使用 [*reshape* 属性](#reshape)。同样， 如果模型产生的输出形状与 Triton 在响应推理请求时返回的形状不匹配，则必须使用*reshape* 属性。
 
-## Auto-Generated Model Configuration
+## 自动生成模型配置
 
-By default, the model configuration file containing the required
-settings must be provided with each model. However, if Triton is
-started with the --strict-model-config=false option, then in some
-cases the required portions of the model configuration file can be
-generated automatically by Triton. The required portion of the model
-configuration are those settings shown in the [Minimal Model
-Configuration](#minimal-model-configuration). Specifically, TensorRT,
-TensorFlow saved-model, and ONNX models do not require a model
-configuration file because Triton can derive all the required settings
-automatically. All other model types must provide a model
-configuration file.
+默认情况下，每个模型都必须提供包含所需设置的模型配置文件。但是，如果 Triton 使用 --strict-model-config=false 选项启动，那么在某些情况下，模型配置文件的所需部分可以由 Triton 自动生成。模型配置的必需部分是[最小模型配置](#minimal-model-configuration)中显示的那些设置。具体来说，TensorRT、TensorFlow 保存的模型和 ONNX 模型不需要模型配置文件，因为 Triton 可以自动导出所有需要的设置。所有其他类型的模型必须提供模型配置文件。
 
-When using --strict-model-config=false you can see the model
-configuration that was generated for a model by using the [model
-configuration
-endpoint](https://github.com/triton-inference-server/server/blob/main/docs/protocol/extension_model_configuration.md). The
-easiest way to do this is to use a utility like *curl*:
+使用 --strict-model-config=false 时，您可以查看使用 [模型配置节点](https://github.com/triton-inference-server/server/blob/main/docs/protocol/extension_model_configuration.md)为模型生成的模型配置。最简单的方法是使用*curl*之类的工具：
 
 ```bash
 $ curl localhost:8000/v2/models/<model name>/config
 ```
 
-This will return a JSON representation of the generated model
-configuration. From this you can take the max_batch_size, inputs, and
-outputs sections of the JSON and convert it to a config.pbtxt file.
-Triton only generates the [minimal portion of the model
-configuration](#minimal-model-configuration). You must still provide
-the optional portions of the model configuration by editing the
-config.pbtxt file.
+这将返回生成的模型配置的 JSON 表示。您可以从中获取 JSON格式 的 max_batch_size、输入和输出部分，并将其转换为 config.pbtxt 文件。Triton 只生成[模型配置的最小部分](#minimal-model-configuration)。您仍然必须通过编辑 config.pbtxt 文件来提供模型配置的可选部分。
 
-## Datatypes
+## 数据类型
 
-The following table shows the tensor datatypes supported by
-Triton. The first column shows the name of the datatype as it appears
-in the model configuration file. The next four columns show the
-corresponding datatype for supported model frameworks. If a model
-framework does not have an entry for a given datatype, then Triton
-does not support that datatype for that model. The sixth column,
-labeled "API", shows the corresponding datatype for the TRITONSERVER C
-API, TRITONBACKEND C API, HTTP/REST protocol and GRPC protocol. The
-last column shows the corresponding datatype for the Python numpy
-library.
+下表显示了 Triton 支持的张量数据类型。第一列显示模型配置文件中出现的数据类型的名称。接下来的四列显示了支持的模型框架的相应数据类型。如果模型框架没有给定数据类型的条目，则 Triton 不支持该模型的该数据类型。标记为“API”的第六列显示了 TRITONSERVER C API、TRITONBACKEND C API、HTTP/REST 协议和 GRPC 协议对应的数据类型。最后一列显示了 Python numpy 库对应的数据类型。
 
 |Model Config  |TensorRT      |TensorFlow    |ONNX Runtime  |PyTorch  |API      |NumPy         |
 |--------------|--------------|--------------|--------------|---------|---------|--------------|
@@ -265,39 +132,23 @@ library.
 |TYPE_FP64     |              |DT_DOUBLE     |DOUBLE        |kDouble  |FP64     |float64       |
 |TYPE_STRING   |              |DT_STRING     |STRING        |         |BYTES    |dtype(object) |
 
-For TensorRT each value is in the nvinfer1::DataType namespace. For
-example, nvinfer1::DataType::kFLOAT is the 32-bit floating-point
-datatype.
+对于 TensorRT，每个值都在 nvinfer1::DataType 命名空间中。例如，nvinfer1::DataType::kFLOAT 是 32 位浮点数据类型。
 
-For TensorFlow each value is in the tensorflow namespace. For example,
-tensorflow::DT_FLOAT is the 32-bit floating-point value.
+对于 TensorFlow，每个值都在 tensorflow 命名空间中。例如，tensorflow::DT_FLOAT 是 32 位浮点值。
 
-For ONNX Runtime each value is prepended with ONNX_TENSOR_ELEMENT_DATA_TYPE_.
-For example, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT is the 32-bit floating-point
-datatype.
+对于 ONNX Runtime，每个值都以 ONNX_TENSOR_ELEMENT_DATA_TYPE_ 开头。例如，ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT 是 32 位浮点数据类型。
 
-For PyTorch each value is in the torch namespace. For example, torch::kFloat
-is the 32-bit floating-point datatype.
+对于 PyTorch，每个值都在 torch 命名空间中。例如，torch::kFloat 是 32 位浮点数据类型。
 
-For Numpy each value is in the numpy module. For example, numpy.float32
-is the 32-bit floating-point datatype.
+对于 Numpy，每个值都在 numpy 模块中。例如，numpy.float32 是 32 位浮点数据类型。
 
-## Reshape
+## 重塑
+<!-- reshape: { shape: [ ] }，reshape后接的shape是模型推理的形状，dims是推理API输入或输出的形状-->
 -------
 
-The *ModelTensorReshape* property on a model configuration input or
-output is used to indicate that the input or output shape accepted by
-the inference API differs from the input or output shape expected or
-produced by the underlying framework model or custom backend.
+模型配置输入或输出上的*ModelTensorReshape*属性用于表明推理 API 接受的输入或输出形状与底层模型框架或自定义后端预期或生成的输入或输出形状不同。
 
-For an input, *reshape* can be used to reshape the input tensor to a
-different shape expected by the framework or backend. A common
-use-case is where a model that supports batching expects a batched
-input to have shape *[ batch-size ]*, which means that the batch
-dimension fully describes the shape. For the inference API the
-equivalent shape *[ batch-size, 1 ]* must be specified since each
-input must specify a non-empty *dims*. For this case the input should
-be specified as:
+对于输入，*reshape*可用于将输入张量重塑为框架或后端所期望的不同形状。一个常见的用例是支持批处理的模型期望批处理输入具有形状 *[ batch-size ]*，这意味着批处理维度完全描述了形状。对于推理 API，必须指定等效形状 *[ batch-size, 1 ]*，因为每个输入都必须指定一个非空的*dims*。对于这种情况，输入应指定为：
 
 ```
   input [
@@ -308,14 +159,7 @@ be specified as:
     }
 ```
 
-For an output, *reshape* can be used to reshape the output tensor
-produced by the framework or backend to a different shape that is
-returned by the inference API. A common use-case is where a model that
-supports batching expects a batched output to have shape *[ batch-size
-]*, which means that the batch dimension fully describes the
-shape. For the inference API the equivalent shape *[ batch-size, 1 ]*
-must be specified since each output must specify a non-empty
-*dims*. For this case the output should be specified as:
+对于输出，*reshape*可用于将框架或后端生成的输出张量重塑为推理 API 返回的不同形状。一个常见的用例是支持批处理的模型期望批处理输出具有形状 *[ batch-size]*，这意味着批处理维度完全描述了形状。对于推理 API，必须指定等效形状 *[ batch-size, 1 ]*， 因为每个输出都必须指定一个非空的 *dims*。对于这种情况，输出应指定为：
 
 ```
   output [
@@ -326,11 +170,9 @@ must be specified since each output must specify a non-empty
     }
 ```
 
-## Shape Tensors
+## 形状张量
 
-For models that support shape tensors, the *is_shape_tensor* property
-must be set appropriately for inputs and outputs that are acting as
-shape tensors. The following shows and example configuration that specifies shape tensors.
+对于支持形状张量的模型，必须为充当形状张量的输入和输出适当设置*is_shape_tensor*属性。以下显示了指定形状张量的示例配置。
 
 ```
   name: "myshapetensormodel"
@@ -358,11 +200,7 @@ shape tensors. The following shows and example configuration that specifies shap
   ]
 ```
 
-As discussed above, Triton assumes that batching occurs along the
-first dimension which is not listed in in the input or output tensor
-*dims*. However, for shape tensors, batching occurs at the first shape
-value. For the above example, an inference request must provide inputs
-with the following shapes.
+如上所述，Triton 假设批处理发生在输入或输出张量*dims*中未列出的第一个维度上。然而，对于形状张量，批处理发生在第一个形状值处。对于上面的示例，推理请求必须提供具有以下形状的输入。
 
 ```
   "input0": [ x, -1]
@@ -370,38 +208,21 @@ with the following shapes.
   "output0": [ x, -1]
 ```
 
-Where *x* is the batch size of the request. Triton requires the shape
-tensors to be marked as shape tensors in the model when using
-batching. Note that "input1" has shape *[ 1 ]* and not *[ 2 ]*. Triton
-will prepend the shape value *x* at "input1" before issuing the
-request to model.
+其中*x*是请求的批量大小。Triton 要求在使用批处理时将形状张量标记为模型中的形状张量。请注意，“input1”的形状为 *[ 1 ]* 而不是 *[ 2 ]*。在向模型发出请求之前， Triton 将在“input1”处添加形状值*x*。
 
-## Version Policy
+## 版本政策
 
-Each model can have one or more
-[versions](model_repository.md#model-versions). The
-*ModelVersionPolicy* property of the model configuration is used to
-set one of the following policies.
+每个模型可以有一个或多个[版本](model_repository.md#model-versions)。模型配置的 *ModelVersionPolicy*属性用于设置以下策略之一。
 
-* *All*: All versions of the model that are available in the model
-  repository are available for inferencing.
+* *All*: 模型存储库中可用的所有模型版本都可用于推理。
 
-* *Latest*: Only the latest ‘n’ versions of the model in the
-  repository are available for inferencing. The latest versions of the
-  model are the numerically greatest version numbers.
+* *Latest*: 只有存储库中模型的最新的‘n’版本可用于推理。模型的最新版本是数字上最大的版本号。
 
-* *Specific*: Only the specifically listed versions of the model are
-  available for inferencing.
+* *Specific*: 只有模型中特别列出的版本可用于推理。
 
-If no version policy is specified, then *Latest* (with n=1) is used as
-the default, indicating that only the most recent version of the model
-is made available by Triton. In all cases, the [addition or removal of
-version subdirectories](model_management.md) from the model repository
-can change which model version is used on subsequent inference
-requests.
+如果未指定版本策略，则使用*Latest*（n=1）作为默认值，表示 Triton 仅提供模型的最新版本。在所有情况下，从模型存储库中[添加或删除版本子目录](model_management.md)都可以更改在后续推理请求中使用的模型版本。
 
-The following configuration specifies that all versions of the model
-will be available from the server.
+以下配置指定模型的所有版本都可从服务器获得。
 
 ```
   platform: "tensorrt_plan"
@@ -428,21 +249,11 @@ will be available from the server.
   version_policy: { all { }}
 ```
 
-## Instance Groups
+## 实例组
 
-Triton can provide multiple [instances of a
-model](architecture.md#concurrent-model-execution) so that multiple
-inference requests for that model can be handled simultaneously. The
-model configuration *ModelInstanceGroup* property is used to specify
-the number of execution instances that should be made available and
-what compute resource should be used for those instances.
+Triton 可以提供多个[模型的实例](architecture.md#concurrent-model-execution)，以便可以同时处理该模型的多个推理请求。模型配置*ModelInstanceGroup*属性用于指定应该可用的执行实例的数量以及应该为这些实例使用的计算资源。
 
-By default, a single execution instance of the model is created for
-each GPU available in the system. The instance-group setting can be
-used to place multiple execution instances of a model on every GPU or
-on only certain GPUs. For example, the following configuration will
-place two execution instances of the model to be available on each
-system GPU.
+默认情况下，为系统中可用的每个 GPU 创建模型的单个执行实例。实例组设置可用于在每个 GPU 上或仅在某些 GPU 上放置模型的多个执行实例。例如，以下配置将在每个系统 GPU 上放置模型的两个执行实例。
 
 ```
   instance_group [
@@ -453,8 +264,7 @@ system GPU.
   ]
 ```
 
-And the following configuration will place one execution instance on
-GPU 0 and two execution instances on GPUs 1 and 2.
+以下配置将在 GPU 0 上放置一个执行实例，在 GPU 1 和 2 上放置两个执行实例。
 
 ```
   instance_group [
@@ -471,10 +281,7 @@ GPU 0 and two execution instances on GPUs 1 and 2.
   ]
 ```
 
-The instance group setting is also used to enable execution of a model
-on the CPU. A model can be executed on the CPU even if there is a GPU
-available in the system. The following places two execution instances
-on the CPU.
+实例组设置还用于启用模型在 CPU 上的执行。即使系统中有 GPU 可用，模型也可以在 CPU 上执行。下面将两个执行实例放在 CPU 上。
 
 ```
   instance_group [
@@ -485,11 +292,7 @@ on the CPU.
   ]
 ```
 
-The instance group setting is associated with a host policy. The following
-configuration will associate all instances created by the instance group setting
-with host policy "policy_0". By default the host policy will be set according to
-the device kind of the instance, for instance, KIND_CPU is "cpu", KIND_MODEL is
-"model", and KIND_GPU is "gpu_\<gpu_id\>".
+实例组设置与主机策略相关联。以下配置会将实例组设置创建的所有实例与主机策略“policy_0”相关联。默认情况下，主机策略将根据实例的设备类型进行设置，例如，KIND_CPU 为“cpu”，KIND_MODEL 为“model”，KIND_GPU 为“gpu_\<gpu_id\>”。
 
 ```
   instance_group [
@@ -501,40 +304,19 @@ the device kind of the instance, for instance, KIND_CPU is "cpu", KIND_MODEL is
   ]
 ```
 
-### Rate Limiter Config
+### 速率限制器配置
 
-Instance group optionally specifies [rate limiter](rate_limiter.md)
-config which controls how the rate limiter operates on the instances
-in the group. The rate limiter configuration is ignored if rate
-limiting is off. If rate limiting is on and if an instance_group does
-not provide this configuration, then the execution on the model
-instances belonging to this group will not be limited in any way by
-the rate limiter. The configuration includes the following
-specifications:
+实例组可以选择指定[速率限制器](rate_limiter.md)配置，该配置控制速率限制器如何对组中的实例进行操作。如果速率限制关闭，速率限制器配置将被忽略。如果速率限制打开并且一个实例组不提供此配置，则属于该组的模型实例上的执行将不会受到速率限制器的任何限制。配置包括以下规范内容：
 
-#### Resources
+#### 资源
 
-The set of [resources](rate_limiter.md#resources) required to execute
-a model instance. The "name" field identifies the resource and "count"
-field refers to the number of copies of the resource that the model
-instance in the group requires to run. The "global" field specifies
-whether the resource is per-device or shared globally across the system.
-Loaded models can not specify a resource with the same name both as global
-and non-global. If no resources are provided then triton assumes the
-execution of model instance does not require any resources and will
-start executing as soon as model instance is available.
+执行模型实例所需的一组[资源](rate_limiter.md#resources)。“name”字段标识资源，“count”字段是指组中的模型实例运行所需的资源副本数。“global”字段指定资源是按设备还是在系统中全局共享。加载的模型不能将同名的资源同时指定为全局和非全局资源。如果没有提供资源，则 triton 假定模型实例的执行不需要任何资源，并且将在模型实例可用时立即开始执行。
 
-#### Priority
+#### 优先级
 
-Priority serves as a weighting value to be used for prioritizing across
-all the instances of all the models. An instance with priority 2 will be
-given 1/2 the number of scheduling chances as an instance with priority
-1.
+优先级用作加权值，用于对所有模型的所有实例进行优先级排序。优先级为2的实例将获得优先级为1的实例的1/2调度机会。
 
-The following example specifies the instances in the group requires 
-four "R1" and two "R2" resources for execution. Resource "R2" is a global
-resource. Additionally, the rate-limiter priority of the instance_group
-is 2.
+以下示例指定组中的实例需要四个“R1”和两个“R2”资源才能执行。资源“R2”是全局资源。此外，实例组的速率限速器优先级为 2。
 
 ```
   instance_group [
@@ -560,97 +342,47 @@ is 2.
   ]
 ```
 
-The above configuration creates 3 model instances, one on each device
-(0, 1 and 2). The three instances will not contend for "R1" among
-themselves as "R1" is local for their own device, however, they will
-contend for "R2" because it is specified as a global resource which
-means "R2" is shared across the system. Though these instances don't
-contend for "R1" among themsleves, but they will contend for "R1"
-with other model instances which includes "R1" in their resource
-requirements and run on the same device as them.
+上面的配置创建了 3 个模型实例，每个设备上都有一个（0、1 和 2）。这三个实例之间不会争用“R1”，因为“R1”对于它们自己的设备来说是本地的，但是，它们会争用“R2”，因为它被指定为全局资源，这意味着“R2”在整个系统中共享. 虽然这些实例在它们之间不竞争“R1”，但它们会与在同一设备上运行且资源需求中包含“R1”的其他模型实例竞争“R1”。
 
-## Scheduling And Batching
+## 调度和批处理
 
-Triton supports batch inferencing by allowing individual inference
-requests to specify a batch of inputs. The inferencing for a batch of
-inputs is performed at the same time which is especially important for
-GPUs since it can greatly increase inferencing throughput. In many use
-cases the individual inference requests are not batched, therefore,
-they do not benefit from the throughput benefits of batching.
+Triton 通过允许单个推理请求指定一批输入来支持批量推理。同时执行一批输入的推理，这对于 GPU 尤其重要，因为它可以大大提高推理吞吐量。在许多用例中，单个推理请求没有被批处理，因此，它们不会从批处理的吞吐量优势中受益。
 
-The inference server contains multiple scheduling and batching
-algorithms that support many different model types and use-cases. More
-information about model types and schedulers can be found in [Models
-And Schedulers](architecture.md#models-and-schedulers).
+推理服务器包含多种调度和批处理算法，支持许多不同的模型类型和用例。关于模型类型和调度器的更多信息可以在 [模型和调度器](architecture.md#models-and-schedulers)中找到。
 
-### Default Scheduler
+### 默认调度程序
 
-The default scheduler is used for a model if none of the
-*scheduling_choice* properties are specified in the model
-configuration. The default scheduler simply distributes inference
-requests to all [model instances](#instance-groups) configured for the
-model.
+如果在模型配置中未指定任何*scheduling_choice*属性，则默认调度程序用于该模型。默认调度程序只是将推理请求分发给模型配置的所有[模型实例](#instance-groups)。
 
-### Dynamic Batcher
+### 动态批处理器
 
-Dynamic batching is a feature of Triton that allows inference requests
-to be combined by the server, so that a batch is created
-dynamically. Creating a batch of requests typically results in
-increased throughput. The dynamic batcher should be used for
-[stateless models](architecture.md#stateless-models). The dynamically created
-batches are distributed to all [model instances](#instance-groups)
-configured for the model.
+动态批处理是Triton 的一项功能，它允许服务器组合推理请求，从而动态创建批处理。创建一批请求通常会导致吞吐量增加。动态批处理器应该用于[无状态模型](architecture.md#stateless-models)。动态创建的批次分发给模型配置的所有[模型实例](#instance-groups) 。
 
-Dynamic batching is enabled and configured independently for each
-model using the *ModelDynamicBatching* property in the model
-configuration. These settings control the preferred size(s) of the
-dynamically created batches, the maximum time that requests can be
-delayed in the scheduler to allow other requests to join the dynamic
-batch, and queue properties such a queue size, priorities, and
-time-outs.
+使用模型配置中的*ModelDynamicBatching*属性为每个模型单独启用和配置动态批处理。这些设置控制动态创建的批处理的首选大小、请求可以在调度程序中延迟以允许其他请求加入动态批处理的最长时间，以及队列属性，例如队列大小、优先级和超时.
 
-The individual settings are described in detail below. The following
-steps are the recommended process for tuning the dynamic batcher for
-each model. It is also possible to use the [Model
-Analyzer](model_analyzer.md) to automatically search across different
-dynamic batcher configurations.
+下面详细介绍各个设置。以下步骤是为每个模型调整动态批处理器的推荐过程。还可以使用[模型分析器](model_analyzer.md)自动搜索不同的动态批处理器配置。
 
-* Decide on a [maximum batch size](#maximum-batch-size) for the model.
+* 确定模型的 [最大批量大小](#maximum-batch-size) 。
 
-* Add the following to the model configuration to enable the dynamic
-  batcher with all default settings. By default the dynamic batcher
-  will create batches as large as possible up to the maximum batch
-  size and will not [delay](#delayed-batching) when forming batches.
+* 将以下内容添加到模型配置中以启用具有所有默认设置的动态批处理器。默认情况下，动态批处理器将创建尽可能大的批处理，直到最大批处理大小，并且在形成批处理时不会[延迟](#delayed-batching)。
 
 ```
   dynamic_batching { }
 ```
 
-* Use the [Performance Analyzer](perf_analyzer.md) to determine the
-  latency and throughput provided by the default dynamic batcher
-  configuration.
+* 使用[性能分析器](perf_analyzer.md)确定默认动态批处理器配置提供的延迟和吞吐量。
 
-* If the default configuration results in latency values that are
-  within your latency budget, try one or both of the following to
-  trade off increased latency for increased throughput:
+* 如果默认配置导致延迟值在您的延迟预算范围内，请尝试以下一种或两种方法来权衡增加的延迟以提高吞吐量：
 
-  * Increase maximum batch size.
+  * 增加最大批处理大小。
 
-  * Set [batch delay](#delayed-batching) to a non-zero value. Try
-    increasing delay values until the latency budget is exceeded to
-    see the impact on throughput.
+  * 将[批处理延迟](#delayed-batching)设置为非零值。尝试增加延迟值直到超过延迟预算以查看对吞吐量的影响。
 
-* [Preferred batch sizes](#preferred-batch-sizes) should not be used
-  for most models. A preferred batch size(s) should only be configured
-  if that batch size results in significantly higher performance than
-  other batch sizes.
+* 大多数模型不应使用[首选批处理大小](#preferred-batch-sizes)。仅当该批处理大小导致性能明显高于其他批处理大小时，才应配置首选批处理大小。
 
-#### Preferred Batch Sizes
+#### 首选批处理大小
 
-The *preferred_batch_size* property indicates the batch sizes that the
-dynamic batcher should attempt to create. For example, the following
-configuration enables dynamic batching with preferred batch sizes of 4
-and 8.
+*preferred_batch_size*属性表示动态批处理器应尝试创建的批处理大小。例如，以下配置启用动态批处理，首选批处理大小为 4 和 8。
 
 ```
   dynamic_batching {
@@ -658,27 +390,13 @@ and 8.
   }
 ```
 
-When a model instance becomes available for inferencing, the dynamic
-batcher will attempt to create batches from the requests that are
-available in the scheduler. Requests are added to the batch in the
-order the requests were received. If the dynamic batcher can form a
-batch of a preferred size(s) it will create a batch of the largest
-possible preferred size and send it for inferencing. If the dynamic
-batcher cannot form a batch of a preferred size (or if the dynamic
-batcher is not configured with any preferred batch sizes), it will
-send a batch of the largest size possible that is less than the
-maximum batch size allowed by the model (but see the following section
-for the delay option that changes this behavior).
+当模型实例可用于推理时，动态批处理器将根据调度程序中可用的请求尝试创建批处理。按收到请求的顺序将请求添加到批处理中。如果动态批处理器可以形成首选大小的批处理，它将创建最大可能的首选大小的批处理并将其发送以进行推理。如果动态批处理器无法形成首选大小的批处理（或者如果动态批处理器未配置任何首选批处理大小），它将发送一个最大可能的批处理大小，其小于模型允许的最大批处理大小（但是，请参阅以下部分，了解更改此行为的延迟选项）。
 
-The size of generated batches can be examined in aggregate using
-[count metrics](metrics.md#count-metrics).
+生成的批处理大小可以使用[计数指标](metrics.md#count-metrics)进行汇总检查。
 
-#### Delayed Batching
+#### 延迟批处理
 
-The dynamic batcher can be configured to allow requests to be delayed
-for a limited time in the scheduler to allow other requests to join
-the dynamic batch. For example, the following configuration sets the
-maximum delay time of 100 microseconds for a request.
+动态批处理器可以配置为允许请求在调度器中延迟有限的时间，以允许其他请求加入动态批处理。例如，以下配置将请求的最大延迟时间设置为 100 微秒。
 
 ```
   dynamic_batching {
@@ -687,127 +405,51 @@ maximum delay time of 100 microseconds for a request.
   }
 ```
 
-The *max_queue_delay_microseconds* property setting changes the
-dynamic batcher behavior when a batch of a preferred size cannot be
-created. When a batch of a preferred size cannot be created from the
-available requests, the dynamic batcher will delay sending the batch
-as long as no request is delayed longer than the configured
-*max_queue_delay_microseconds* value. If a new request arrives during
-this delay and allows the dynamic batcher to form a batch of a
-preferred batch size, then that batch is sent immediately for
-inferencing. If the delay expires the dynamic batcher sends the batch
-as is, even though it is not a preferred size.
+当无法创建首选大小的批处理时，*max_queue_delay_microseconds*属性设置会改变动态批处理器行为。当无法从可用请求创建首选大小的批处理时，只要请求的延迟时间没有超过配置的*max_queue_delay_microseconds*值，动态批处理器就会延迟发送批处理。如果在此延迟期间有新请求到达并允许动态批处理器形成首选大小的批处理，则立即发送该批处理以进行推理。如果延迟到期，动态批处理器会按原样发送批处理，即使它不是首选大小。
 
-#### Preserve Ordering
+#### 保留顺序
 
-The *preserve_ordering* property is used to force all responses to be
-returned in the same order as requests were received. See the
-[protobuf
-documentation](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)
-for details.
+*preserve_ordering*属性用于强制以与接收请求相同的顺序返回所有响应。有关详细信息，请参阅[protobuf文档](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)。
 
-#### Priority Levels
+#### 优先等级
 
-By default the dynamic batcher maintains a single queue that holds all
-inference requests for a model. The requests are processed and batched
-in order.  The *priority_levels* property can be used to create
-multiple priority levels within the dynamic batcher so that requests
-with higher priority are allowed to bypass requests with lower
-priority. Requests at the same priority level are processed in
-order. Inference requests that do not set a priority are scheduled
-using the *default_priority_level* property.
+默认情况下，动态批处理器维护一个队列，其中包含一个模型的所有推理请求。请求按顺序处理和批处理。*priority_levels*属性可用于在动态批处理器中创建多个优先级，以便允许具有较高优先级的请求插队具有较低优先级的请求。相同优先级的请求按顺序处理。使用*default_priority_level*属性来调度未设置优先级的推理请求。
 
-#### Queue Policy
+#### 队列策略
 
-The dynamic batcher provides several settings that control how
-requests are queued for batching.
+动态批处理器提供了几个设置来控制请求如何排队等待批处理。
 
-When *priority_levels* is not defined the *ModelQueuePolicy* for the
-single queue can be set with *default_queue_policy*.  When
-*priority_levels* is defined, each priority level can have a different
-*ModelQueuePolicy* as specified by *default_queue_policy* and *priority_queue_policy*.
+当没有定义*priority_levels*时，单个队列的*ModelQueuePolicy*可以设置为*default_queue_policy*。当定义了*priority_levels*时，每个优先级可以有一个由*default_queue_policy*和*priority_queue_policy*指定的不同的 *ModelQueuePolicy*。
 
-The *ModelQueuePolicy* property allows a maximum queue size to be set
-using the *max_queue_size*. The *timeout_action*,
-*default_timeout_microseconds* and *allow_timeout_override* settings
-allow the queue to be configured so that individual requests are
-rejected or deferred if their time in the queue exceeds a specified
-timeout.
+*ModelQueuePolicy*属性允许使用*max_queue_size*来设置最大队列大小。*timeout_action*、 *default_timeout_microseconds*和*allow_timeout_override*设置允许配置队列，以便单个请求在队列中的时间，超过指定的超时时间时，拒绝或延迟。
 
-### Sequence Batcher
+### 序列批处理
 
-Like the dynamic batcher, the sequence batcher combines non-batched
-inference requests, so that a batch is created dynamically. Unlike the
-dynamic batcher, the sequence batcher should be used for
-[stateful models](architecture.md#stateful-models) where a sequence of
-inference requests must be routed to the same model instance. The
-dynamically created batches are distributed to all [model
-instances](#instance-groups) configured for the model.
+与动态批处理器一样，序列批处理器组合非批处理推理请求，从而动态创建批处理。与动态批处理器不同，序列批处理器应用于[有状态模型](architecture.md#stateful-models)，其中必须将一个序列的推理请求路由到同一模型实例。动态创建的批处理分发给模型配置的所有[模型实例](#instance-groups)。
 
-Sequence batching is enabled and configured independently for each
-model using the *ModelSequenceBatching* property in the model
-configuration. These settings control the sequence timeout as well as
-configuring how Triton will send control signals to the model
-indicating sequence start, end, ready and correlation ID. See
-[Stateful Models](architecture.md#stateful-models) for more
-information and examples.
+使用模型配置中的*ModelSequenceBatching*属性为每个模型单独启用和配置序列批处理。这些设置控制序列超时以及配置 Triton 如何将控制信号发送到模型，表示序列开始、结束、就绪和相关 ID。有关更多信息和示例，请参阅[有状态模型](architecture.md#stateful-models)。
 
-### Ensemble Scheduler
+### 集成调度器
 
-The ensemble scheduler must be used for [ensemble
- models](architecture.md#ensemble-models) and cannot be used for any
- other type of model.
+ 集成调度器必须用于[集成模型](architecture.md#ensemble-models)，不能用于任何其他类型的模型。
 
-The ensemble scheduler is enabled and configured independently for
-each model using the *ModelEnsembleScheduling* property in the model
-configuration. The settings describe the models that are included in
-the ensemble and the flow of tensor values between the models. See
-[Ensemble Models](architecture.md#ensemble-models) for more
-information and examples.
+使用模型配置中的*ModelEnsembleScheduling*属性为每个模型单独启用和配置集成调度程序。这些设置描述了集成中包含的模型以及模型之间的张量值流。有关更多信息和示例，请参阅[集成模型](architecture.md#ensemble-models)。
 
-## Optimization Policy
+## 优化策略
 
-The model configuration *ModelOptimizationPolicy* property is used to
-specify optimization and prioritization settings for a model. These
-settings control if/how a model is optimized by the backend and how it
-is scheduled and executed by Triton. See the [ModelConfig
-protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)
-and [optimization](optimization.md#framework-specific-optimization)
-documentation for the currently available settings.
+模型配置*ModelOptimizationPolicy*属性用于指定模型的优化和优先级设置。这些设置控制模型是否/如何由后端优化，以及如何由 Triton 调度和执行。有关当前可用的设置，请参阅[模型配置protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto) 和 [优化](optimization.md#framework-specific-optimization)文档。
 
-## Model Warmup
+## 模型热身
 
-When a model is loaded by Triton the corresponding
-[backend](https://github.com/triton-inference-server/backend/blob/main/README.md)
-initializes for that model.  For some backends, some or all of this
-initialization is deferred until the model receives its first
-inference request (or first few inference requests). As a result, the
-first (few) inference requests can be significantly slower due to
-deferred initialization.
+当 Triton 加载模型时，相应的 [后端](https://github.com/triton-inference-server/backend/blob/main/README.md) 会为该模型初始化。对于某些后端，部分或全部初始化被推迟到模型接收到它的第一个推理请求（或前几个推理请求）。因此，由于延迟初始化，第一个或前几个推理请求可能会明显变慢。
 
-To avoid these initial, slow inference requests, Triton provides a
-configuration option that enables a model to be "warmed up" so that it
-is completely initialized before the first inference request is
-received. When the *ModelWarmup* property is defined in a model
-configuration, Triton will not show the model as being ready for
-inference until model warmup has completed.
+为了避免这些初始时缓慢的推理请求，Triton 提供了一个配置选项，使模型能够“预热”，以便在收到第一个推理请求之前完全初始化它。在模型配置中定义*ModelWarmup*属性时，直到模型预热完成，Triton 才会将模型显示为已准备好进行推理。
 
-The model configuration *ModelWarmup* is used to specify warmup
-settings for a model. The settings define a series of inference
-requests that Triton will create to warm-up each model instance. A
-model instance will be served only if it completes the requests
-successfully.  Note that the effect of warming up models varies
-depending on the framework backend, and it will cause Triton to be
-less responsive to model update, so the users should experiment and
-choose the configuration that suits their need.  See the protobuf
-documentation for the currently available settings.
+模型配置*ModelWarmup*用于指定模型的预热设置。这些设置定义了 Triton 将创建的一系列推理请求，以预热每个模型实例。仅当模型实例成功完成请求时才会提供服务。请注意，预热模型的效果因框架后端而异，这会导致 Triton 对模型更新的响应速度较慢，因此用户应尝试并选择适合自己需要的配置。有关当前可用的设置，请参阅 protobuf 文档。
 
-## Response Cache (beta)
+## 响应缓存 (测试版)
 
-The model configuration `response_cache` section has an `enable` boolean used to
-enable the Response Cache for this model. In addition to enabling the cache in
-the model config, a non-zero `--response-cache-byte-size` must be set when
-starting the server.
+模型配置`response_cache`部分有一个`enable`布尔值，用于为此模型启用响应缓存。除了在模型配置中启用缓存外，启动服务器时还必须设置一个非零值的`--response-cache-byte-size`。
 
 ```
 response_cache { 
@@ -815,9 +457,5 @@ response_cache {
 }
 ```
 
-See the [Response
-Cache](https://github.com/triton-inference-server/server/blob/main/docs/response_cache.md)
-and [ModelConfig
-protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto).
-docs for more information.
+请参阅[响应缓存](https://github.com/triton-inference-server/server/blob/main/docs/response_cache.md)和[模型配置protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)。文档以获取更多信息。
 
