@@ -1,71 +1,20 @@
-<!--
-# Copyright (c) 2019-2020, NVIDIA CORPORATION. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 自定义操作
 
-# Custom Operations
-
-Modeling frameworks that allow custom operations are partially
-supported by the Triton Inference Server. Custom operations can be
-added to Triton at build time or at startup and are made available to
-all loaded models.
+Triton 推理服务器部分支持允许自定义操作的模型框架。自定义操作可以在构建时或启动时添加到 Triton，并且可用于所有加载的模型。
 
 ## TensorRT
 
-TensorRT allows a user to create [custom
-layers](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html#extending)
-which can then be used in TensorRT models. For those models to run in
-Triton the custom layers must be made available.
+TensorRT 允许用户创建[自定义层](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html#extending) ，然后可以在 TensorRT 模型中使用。对于要在 Triton 中运行的模型，必须使自定义层可用。
 
-To make the custom layers available to Triton, the TensorRT custom
-layer implementations must be compiled into one or more shared
-libraries which must then be loaded into Triton using LD_PRELOAD. For
-example, assuming your TensorRT custom layers are compiled into
-libtrtcustom.so, starting Triton with the following command makes
-those custom layers available to all TensorRT models.
+为了使自定义层对 Triton 可用，TensorRT 自定义层实现必须编译到一个或多个共享库中，然后必须使用 LD_PRELOAD 将其加载到 Triton 中。例如，假设您的 TensorRT 自定义层被编译到 libtrtcustom.so 中，使用以下命令启动 Triton 会使这些自定义层可用于所有 TensorRT 模型。
 
 ```bash
 $ LD_PRELOAD=libtrtcustom.so tritonserver --model-repository=/tmp/models ...
 ```
 
-A limitation of this approach is that the custom layers must be
-managed separately from the model repository itself. And more
-seriously, if there are custom layer name conflicts across multiple
-shared libraries there is currently no way to handle it.
+这种方法的一个限制是自定义层必须与模型存储库本身分开管理。更严重的是，如果多个共享库之间存在自定义层名称冲突，则目前无法处理。
 
-When building the custom layer shared library it is important to use
-the same version of TensorRT as is being used in Triton. You can find
-the TensorRT version in the [Triton Release
-Notes](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html). A
-simple way to ensure you are using the correct version of TensorRT is
-to use the [NGC TensorRT
-container](https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt)
-corresponding to the Triton container. For example, if you are using
-the 21.11 version of Triton, use the 21.11 version of the TensorRT
-container.
+在构建自定义层共享库时，使用与 Triton 中使用的相同版本的 TensorRT 非常重要。您可以在[Triton 发行说明](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)中找到 TensorRT 版本。确保您使用正确版本的 TensorRT 的一种简单方法是使用与 Triton 容器对应的[NGC TensorRT容器](https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt)。例如，如果您使用的是 21.11 版本的 Triton，请使用 21.11 版本的 TensorRT 容器。
 
 ## TensorFlow
 
