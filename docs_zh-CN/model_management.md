@@ -1,178 +1,55 @@
-<!--
-# Copyright (c) 2018-2020, NVIDIA CORPORATION. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 模型管理
 
-# Model Management
+Triton 提供的模型管理 API 是一部分的[HTTP/REST 和 GRPC 协议，也是 C API 的一部分](inference_protocols.md)。Triton 以三种模型控制模式之一运行：NONE、EXPLICIT 或 POLL。模型控制模式决定了 Triton 如何处理对模型存储库的更改以及这些协议和 API 中的哪些可用。
 
-Triton provides model management APIs are part of the [HTTP/REST and
-GRPC protocols, and as part of the C
-API](inference_protocols.md). Triton operates in one of three model
-control modes: NONE, EXPLICIT or POLL. The model control mode
-determines how changes to the model repository are handled by Triton
-and which of these protocols and APIs are available.
+## 模型控制模式 NONE
 
-## Model Control Mode NONE
+Triton 尝试在启动时加载模型存储库中的所有模型。Triton 无法加载的模型将被标记为 UNAVAILABLE 并且不可用于推理。
 
-Triton attempts to load all models in the model repository at
-startup. Models that Triton is not able to load will be marked as
-UNAVAILABLE and will not be available for inferencing.
+服务器运行时对模型存储库的更改将被忽略。使用[模型控制协议](protocol/extension_model_repository.md)的模型加载和卸载请求不会有任何影响，并且会返回错误响应。
 
-Changes to the model repository while the server is running will be
-ignored. Model load and unload requests using the [model control
-protocol](protocol/extension_model_repository.md) will have no affect
-and will return an error response.
+通过在启动 Triton 时指定 --model-control-mode=none 来选择此模型控制模式。这是默认的模型控制模式。如[修改模型存储库](#modifying-the-model-repository)中所述，在 Triton 运行时更改模型存储库必须小心。
 
-This model control mode is selected by specifying
---model-control-mode=none when starting Triton. This is the default
-model control mode. Changing the model repository while Triton is
-running must be done carefully, as explained in [Modifying the Model
-Repository](#modifying-the-model-repository).
+## 模型控制模式 EXPLICIT
 
-## Model Control Mode EXPLICIT
+在启动时，Triton 仅加载使用 --load-model 命令行选项明确指定的那些模型。如果未指定 --load-model 则在启动时不加载任何模型。Triton 无法加载的模型将被标记为 UNAVAILABLE 并且不可用于推理。
 
-At startup, Triton loads only those models specified explicitly with
-the --load-model command-line option. If --load-model is not specified
-then no models are loaded at startup. Models that Triton is not able
-to load will be marked as UNAVAILABLE and will not be available for
-inferencing.
+启动后，所有模型加载和卸载动作都必须使用[模型控制协议](protocol/extension_model_repository.md)显式启动。模型控制请求的响应状态表示加载或卸载动作的成功或失败。尝试重新加载已加载的模型时，如果由于任何原因重新加载失败，则已加载的模型将保持不变并保持加载状态。如果重新加载成功，新加载的模型将替换已经加载的模型，而不会损失模型的可用性。
 
-After startup, all model load and unload actions must be initiated
-explicitly by using the [model control
-protocol](protocol/extension_model_repository.md). The response
-status of the model control request indicates success or failure of
-the load or unload action. When attempting to reload an already loaded
-model, if the reload fails for any reason the already loaded model
-will be unchanged and will remain loaded. If the reload succeeds, the
-newly loaded model will replace the already loaded model without any
-loss in availability for the model.
+通过指定 --model-control-mode=explicit 启用此模型控制模式。在 Triton 运行时更改模型存储库必须小心，如[修改模型存储库](#modifying-the-model-repository)中所述。
 
-This model control mode is enabled by specifying
---model-control-mode=explicit. Changing the model repository while
-Triton is running must be done carefully, as explained in [Modifying
-the Model Repository](#modifying-the-model-repository).
+## 模型控制模式 POLL
 
-## Model Control Mode POLL
+Triton 尝试在启动时加载模型存储库中的所有模型。Triton 无法加载的模型将被标记为 UNAVAILABLE 并且不可用于推理。
 
-Triton attempts to load all models in the model repository at
-startup. Models that Triton is not able to load will be marked as
-UNAVAILABLE and will not be available for inferencing.
+将检测到模型存储库的更改，Triton 将根据这些更改尝试加载和卸载模型。尝试重新加载已加载的模型时，如果由于任何原因重新加载失败，则已加载的模型将保持不变并保持加载状态。如果重新加载成功，新加载的模型将替换已经加载的模型，而不会丢失模型的可用性。
 
-Changes to the model repository will be detected and Triton will
-attempt to load and unload models as necessary based on those changes.
-When attempting to reload an already loaded model, if the reload fails
-for any reason the already loaded model will be unchanged and will
-remain loaded. If the reload succeeds, the newly loaded model will
-replace the already loaded model without any loss of availability for
-the model.
+由于 Triton 会定期轮询存储库，因此可能无法立即检测到对模型存储库的更改。您可以使用 --repository-poll-secs 选项控制轮询间隔。控制台日志或[模型就绪协议](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/required_api.md)或[模型控制协议](protocol/extension_model_repository.md)的索引操作可用于确定模型存储库更改何时生效。
 
-Changes to the model repository may not be detected immediately
-because Triton polls the repository periodically. You can control the
-polling interval with the --repository-poll-secs option. The console
-log or the [model ready
-protocol](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/required_api.md)
-or the index operation of the [model control
-protocol](protocol/extension_model_repository.md) can be used to
-determine when model repository changes have taken effect.
+**警告：Triton 轮询模型存储库与您对存储库进行任何更改之间没有同步。因此，Triton 可以观察到会导致意外行为的部分和不完整的改变。因此，不建议在生产环境中使用 POLL 模式。**
 
-**WARNING: There is no synchronization between when Triton polls the
-model repository and when you make any changes to the repository. As a
-result Triton could observe partial and incomplete changes that lead
-to unexpected behavior. For this reason POLL mode is not recommended
-for use in production environments.**
+使用[模型控制协议](protocols/extension_model_repository.md)的模型加载和卸载请求不会有任何影响，并且会返回错误响应。
 
-Model load and unload requests using the [model control
-protocol](protocols/extension_model_repository.md) will have no affect
-and will return an error response.
+通过指定 --model-control-mode=poll 并在启动 Triton 时将 --repository-poll-secs 设置为非零值来启用此模型控制模式。正如[修改模型存储库](#modifying-the-model-repository)中解释，在 Triton 运行时更改模型存储库必须小心。
 
-This model control mode is enabled by specifying
---model-control-mode=poll and by setting --repository-poll-secs to a
-non-zero value when starting Triton. Changing the model repository
-while Triton is running must be done carefully, as explained in
-[Modifying the Model Repository](#modifying-the-model-repository).
+在 POLL 模式下，Triton 响应以下模型存储库更改：
 
-In POLL mode Triton responds to the following model repository
-changes:
+* 通过添加和删除相应的版本子目录，可以在模型中添加和删除版本。即使他们正在使用模型的已删除版本，Triton 也将允许执行中的请求完成。对已删除模型版本的新请求将失败。根据模型的[版本策略](model_configuration.md#version-policy)，对可用版本的更改可能会更改默认提供的模型版本。  
 
-* Versions may be added and removed from models by adding and removing
-  the corresponding version subdirectory. Triton will allow in-flight
-  requests to complete even if they are using a removed version of the
-  model. New requests for a removed model version will fail. Depending
-  on the model's [version
-  policy](model_configuration.md#version-policy), changes to the
-  available versions may change which model version is served by
-  default.
+* 通过删除相应的模型目录，可以从存储库中删除现有模型。Triton 将允许即使存在使用已删除模型的任何版本的执行中的请求，也能完成删除。对已移除模型的新请求将失败。
 
-* Existing models can be removed from the repository by removing the
-  corresponding model directory.  Triton will allow in-flight requests
-  to any version of the removed model to complete. New requests for a
-  removed model will fail.
+* 可以通过添加新模型目录将新模型添加到存储库中。
 
-* New models can be added to the repository by adding a new model
-  directory.
+* [模型配置文件](model_configuration.md) (config.pbtxt) 可以更改，Triton 将卸载并重新加载模型以获取新的模型配置。
 
-* The [model configuration file](model_configuration.md)
-  (config.pbtxt) can be changed and Triton will unload and reload the
-  model to pick up the new model configuration.
+* 为表示分类的输出提供标签的标签文件，可以添加、删除或修改，Triton 将卸载并重新加载模型以获取新标签。如果添加或删除标签文件，则必须同时对[模型配置](model_configuration.md)中对应的输出的*label_filename* 属性进行相应的编辑。
 
-* Label(s) files providing labels for outputs that represent
-  classifications can be added, removed, or modified and Triton will
-  unload and reload the model to pick up the new labels. If a label
-  file is added or removed the corresponding edit to the
-  *label_filename* property of the output it corresponds to in the
-  [model configuration](model_configuration.md) must be performed at
-  the same time.
+## 修改模型存储库
 
-## Modifying the Model Repository
+模型存储库中的每个模型都[位于自己的子目录](model_repository.md#repository-layout)中。模型子目录内容允许的活动取决于 Triton 使用该模型的方式。可以使用[模型元数据](inference_protocols.md#inference-protocols-and-apis)或 [存储库索引](protocol/extension_model_repository.md#index)API 来确定模型的状态。
 
-Each model in a model repository [resides in its own
-sub-directory](model_repository.md#repository-layout). The activity
-allowed on the contents of a model's sub-directory varies depending on
-how Triton is using that model. The state of a model can be determined
-by using the [model
-metadata](inference_protocols.md#inference-protocols-and-apis) or
-[repository index](protocol/extension_model_repository.md#index) APIs.
+* 如果模型正在加载或卸载，则不必添加、删除或修改该子目录中的任何文件或目录。
 
+* 如果模型从未加载或完全卸载，则可以删除整个模型子目录，或者可以添加、删除或修改其任何内容。
 
-* If the model is actively loading or unloading, no files or
-directories within that sub-directory must be added, removed or
-modified.
-
-* If the model has never been loaded or has been completely unloaded,
-  then the entire model sub-directory can be removed or any of its
-  contents can be added, removed or modified.
-
-* If the model has been completely loaded then any files or
-directories within that sub-directory can be added, removed or
-modified; except for shared libraries implementing the model's
-backend. Triton uses the backend shared libraries while the model is
-loading so removing or modifying them will likely cause Triton to
-crash. To update a model's backend you must first unload the model
-completely, modify the backend shared libraries, and then reload the
-model. On some OSes it may also be possible to simply move the
-existing shared-libraries to another location outside of the model
-repository, copy in the new shared libraries, and then reload the
-model.
+* 如果模型已完全加载，除了实现模型后端的共享库，可以添加、删除或修改该子目录中的任何文件或目录。Triton 在加载模型时使用后端共享库，因此删除或修改它们可能会导致 Triton 崩溃。要更新模型的后端，您必须先完全卸载模型，修改后端共享库，然后重新加载模型。在某些操作系统上，也可以简单地将现有的共享库移动到模型存储库之外的另一个位置，复制进来新的共享库，然后重新加载模型。
