@@ -1,65 +1,26 @@
-<!--
-# Copyright (c) 2018-2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 推理协议和API
 
-# Inference Protocols and APIs
+客户端可以使用 HTTP/REST 或 GRPC 协议或通过 C API 与 Triton 进行通信。
 
-Clients can communicate with Triton using either an HTTP/REST or GRPC
-protocol, or by a C API.
+## HTTP/REST 和 GRPC 协议
 
-## HTTP/REST and GRPC Protocols
+Triton 基于[KFServing项目](https://github.com/kubeflow/kfserving) 提出的[标准推理协议](https://github.com/kubeflow/kfserving/tree/master/docs/predict-api/v2)公开了 HTTP/REST 和 GRPC 端点。为了完全启用所有功能，Triton还实现了对KFServing推理协议的一系列[HTTP/REST 和 GRPC 扩展](https://github.com/triton-inference-server/server/tree/main/docs/protocol)。
 
-Triton exposes both HTTP/REST and GRPC endpoints based on [standard
-inference
-protocols](https://github.com/kubeflow/kfserving/tree/master/docs/predict-api/v2)
-that have been proposed by the [KFServing
-project](https://github.com/kubeflow/kfserving). To fully enable all
-capabilities Triton also implements a number [HTTP/REST and GRPC
-extensions](https://github.com/triton-inference-server/server/tree/main/docs/protocol).
-to the KFServing inference protocol.
+HTTP/REST 和 GRPC 协议提供端点来检查服务器和模型的健康状况、元数据和统计信息。其他端点允许模型加载和卸载以及推理。有关详细信息，请参阅 KFServing 和扩展文档。
 
-The HTTP/REST and GRPC protcols provide endpoints to check server and
-model health, metadata and statistics. Additional endpoints allow
-model loading and unloading, and inferencing. See the KFServing and
-extension documentation for details.
+### HTTP选项
+Triton 为使用 HTTP 协议的服务器-客户端网络事务提供以下配置选项。
 
-### HTTP Options
-Triton provides the following configuration options for server-client network transactions over HTTP protocol.
+#### 压缩
 
-#### Compression
+Triton 允许通过其客户端对 HTTP 上的请求/响应进行在线压缩。有关详细信息，请参阅[HTTP 压缩](https://github.com/triton-inference-server/client/tree/main#compression) 。
 
-Triton allows the on-wire compression of request/response on HTTP through its clients. See [HTTP Compression](https://github.com/triton-inference-server/client/tree/main#compression) for more details.
-
-### GRPC Options
-Triton exposes various GRPC parameters for configuring the server-client network transactions. For usage of these options, refer to the output from `tritonserver --help`.
+### GRPC选项
+Triton 公开了用于配置服务器-客户端网络事务的各种 GRPC 参数。有关这些选项的用法，请参阅`tritonserver --help`的输出。
 
 #### SSL/TLS
 
-These options can be used to configure a secured channel for communication. The server-side options include:
+这些选项可用于配置通信的安全通道。服务器端选项包括：
 
 * `--grpc-use-ssl`
 * `--grpc-use-ssl-mutual`
@@ -67,26 +28,25 @@ These options can be used to configure a secured channel for communication. The 
 * `--grpc-server-key`
 * `--grpc-root-cert`
 
-For client-side documentation, see [Client-Side GRPC SSL/TLS](https://github.com/triton-inference-server/client/tree/main#ssltls)
+有关客户端文档，请参阅[客户端GRPC SSL/TLS](https://github.com/triton-inference-server/client/tree/main#ssltls)
 
-For more details on overview of authentication in gRPC, refer [here](https://grpc.io/docs/guides/auth/).
+关于gRPC中身份验证的更多详细概述，请参考[这里](https://grpc.io/docs/guides/auth/)。
 
-#### Compression
+#### 压缩
 
-Triton allows the on-wire compression of request/response messages by exposing following option on server-side:
+通过在服务器端公开以下选项，Triton允许在线压缩请求/响应消息:
 
 * `--grpc-infer-response-compression-level`
 
-For client-side documentation, see [Client-Side GRPC Compression](https://github.com/triton-inference-server/client/tree/main#compression-1)
+有关客户端文档，请参见[客户端GRPC压缩](https://github.com/triton-inference-server/client/tree/main#compression-1)
 
-Compression can be used to reduce the amount of bandwidth used in server-client communication. For more details, see [gRPC Compression](https://grpc.github.io/grpc/core/md_doc_compression.html). 
+压缩可以用来减少服务器-客户端通信中使用的带宽量。要了解更多细节，请参见[gRPC压缩](https://grpc.github.io/grpc/core/md_doc_compression.html)。
 
 #### GRPC KeepAlive
 
-Triton exposes GRPC KeepAlive parameters with the default values for both
-client and server described [here](https://github.com/grpc/grpc/blob/master/doc/keepalive.md).
+Triton使用[这里](https://github.com/grpc/grpc/blob/master/doc/keepalive.md)描述的客户端和服务器的默认值，公开GRPC KeepAlive参数。
 
-These options can be used to configure the KeepAlive settings:
+这些选项可以用来配置KeepAlive设置:
 
 * `--grpc-keepalive-time`
 * `--grpc-keepalive-timeout`
@@ -95,19 +55,11 @@ These options can be used to configure the KeepAlive settings:
 * `--grpc-http2-min-recv-ping-interval-without-data`
 * `--grpc-http2-max-ping-strikes`
 
-For client-side documentation, see [Client-Side GRPC KeepAlive](https://github.com/triton-inference-server/client/blob/main/README.md#grpc-keepalive).
+有关客户端文档，请参见[客户端 GRPC KeepAlive](https://github.com/triton-inference-server/client/blob/main/README.md#grpc-keepalive)。
 
 ## C API
 
-The Triton Inference Server provides a backwards-compatible C API that
-allows Triton to be linked directly into a C/C++ application. The API
-is documented in
-[tritonserver.h](https://github.com/triton-inference-server/core/blob/main/include/triton/core/tritonserver.h).
+Triton Inference Server提供了一个向后兼容的C API，允许将Triton直接链接到C/ C++应用程序中。这个API记录在[tritonserver.h](https://github.com/triton-inference-server/core/blob/main/include/triton/core/tritonserver.h)中。
 
-A simple example using the C API can be found in
-[simple.cc](../src/servers/simple.cc).  A more complicated example can
-be found in the source that implements the HTTP/REST and GRPC
-endpoints for Triton. These endpoints use the C API to communicate
-with the core of Triton. The primary source files for the endpoints
-are [grpc_server.cc](../src/servers/grpc_server.cc) and
-[http_server.cc](../src/servers/http_server.cc).
+
+在[simple.cc](../src/servers/simple.cc)中可以找到一个使用C API的简单示例。在源代码中可以找到一个更复杂的例子，它为Triton实现了HTTP/REST和GRPC端点。这些端点使用C API与Triton的核心进行通信。端点的主要源文件是[grpc_server.cc](../src/servers/grpc_server.cc)和[http_server.cc](../src/servers/http_server.cc)。
