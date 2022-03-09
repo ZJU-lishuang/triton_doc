@@ -1,50 +1,14 @@
-<!--
-# Copyright 2018-2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 指标
 
-# Metrics
-
-Triton provides [Prometheus](https://prometheus.io/) metrics
-indicating GPU and request statistics. By default, these metrics are
-available at http://localhost:8002/metrics. The metrics are only
-available by accessing the endpoint, and are not pushed or published
-to any remote server. The metric format is plain text so you can view
-them directly, for example:
+Triton 提供了指表示GPU 和请求统计信息的[Prometheus](https://prometheus.io/) 指标。默认情况下，这些指标可在http://localhost:8002/metrics获得。这些指标只能通过访问端点获得，不会推送或发布到任何远程服务器。度量格式是纯文本，因此您可以直接查看它们，例如：
 
 ```
 $ curl localhost:8002/metrics
 ```
 
-The tritonserver --allow-metrics=false option can be used to disable
-all metric reporting and --allow-gpu-metrics=false can be used to
-disable just the GPU Utilization and GPU Memory metrics. The
---metrics-port option can be used to select a different port.
+tritonserver --allow-metrics=false 选项可用于禁用所有指标报告，而 --allow-gpu-metrics=false 可用于仅禁用 GPU 利用率和 GPU 内存指标。--metrics-port 选项可用于选择不同的端口。
 
-The following table describes the available metrics.
+下表描述了可用的指标。
 
 |Category      |Metric          |Description                            |Granularity|Frequency    |
 |--------------|----------------|---------------------------------------|-----------|-------------|
@@ -63,33 +27,23 @@ The following table describes the available metrics.
 |              |Compute Time    |Cumulative time requests spend executing the inference model (in the framework backend)     |Per model  |Per request  |
 |              |Compute Output Time|Cumulative time requests spend processing inference outputs (in the framework backend)     |Per model  |Per request  |
 
-## Count Metrics
+## 计数指标
 
-For models that do not support batching, *Request Count*, *Inference
-Count* and *Execution Count* will be equal, indicating that each
-inference request is executed separately.
+对于不支持批处理的模型，*Request Count*, *Inference Count* 和 *Execution Count* 将相等，表示每个推理请求是单独执行的。
 
 For models that support batching, the count metrics can be interpreted
 to determine average batch size as *Inference Count* / *Execution
 Count*. The count metrics are illustrated by the following examples:
+对于支持批处理的模型，计数指标可以解释为将平均批处理大小确定为*Inference Count* / *Execution Count*。以下示例说明了计数指标：
 
-* Client sends a single batch-1 inference request. *Request Count* =
-  1, *Inference Count* = 1, *Execution Count* = 1.
+* 客户端发送一个batch-1推理请求。 *Request Count* =1, *Inference Count* = 1, *Execution Count* = 1.
 
-* Client sends a single batch-8 inference request. *Request Count* =
-  1, *Inference Count* = 8, *Execution Count* = 1.
+* 客户端发送一个batch-8推理请求。*Request Count* =1, *Inference Count* = 8, *Execution Count* = 1.
 
-* Client sends 2 requests: batch-1 and batch-8. Dynamic batcher is not
-  enabled for the model. *Request Count* = 2, *Inference Count* = 9,
-  *Execution Count* = 2.
+* 客户端发送两个请求: batch-1和batch-8。模型未启用动态批处理器。
+*Request Count* = 2, *Inference Count* = 9,*Execution Count* = 2.
 
-* Client sends 2 requests: batch-1 and batch-1. Dynamic batcher is
-  enabled for the model and the 2 requests are dynamically batched by
-  the server. *Request Count* = 2, *Inference Count* = 2, *Execution
-  Count* = 1.
+* 客户端发送两个请求: batch-1和batch-1。模型启用动态批处理器 ，两个请求被服务器动态批处理。 *Request Count* = 2, *Inference Count* = 2, *Execution Count* = 1.
 
-* Client sends 2 requests: batch-1 and batch-8. Dynamic batcher is
-  enabled for the model and the 2 requests are dynamically batched by
-  the server. *Request Count* = 2, *Inference Count* = 9, *Execution
-  Count* = 1.
+* 客户端发送两个请求: batch-1和batch-8。模型启用动态批处理器 ，两个请求被服务器动态批处理。 *Request Count* = 2, *Inference Count* = 9, *Execution Count* = 1.
 
