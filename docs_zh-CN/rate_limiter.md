@@ -1,78 +1,19 @@
-<!--
-# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 速率控制器
+速率限制器管理Triton在模型实例上调度请求的速率。速率限制器在Triton中加载的所有模型中运行，以允许*跨模型优先化*。
 
-# Rate Limiter
+在没有速率限制 (--rate-limit=off)的情况下，Triton一旦有了可用的模型实例，就会调度一个请求(或使用动态批处理时的一组请求)的执行。这种行为通常最适合于性能。然而，在某些情况下，同时运行所有模型会给服务器带来过多的负载。例如，一些框架上的模型执行动态分配内存。同时运行所有这些模型可能会导致系统内存不足。
 
-Rate limiter manages the rate at which requests are scheduled on
-model instances by Triton. The rate limiter operates across all
-models loaded in Triton to allow *cross-model prioritization*.
+速率限制器允许推迟某些模型实例上的推理执行，这样它们就不会同时运行。模型优先级用来决定下一步要调度哪个模型实例。
 
-In absence of rate limiting (--rate-limit=off), Triton schedules
-execution of a request (or set of requests when using dynamic
-batching) as soon as a model instance is available. This behavior
-is typically best suited for performance. However, there can be
-cases where running all the models simultaneously places excessive
-load on the server. For instance, model execution on some
-frameworks dynamically allocate memory. Running all such models
-simultaneously may lead to system going out-of-memory.
+## 使用速率控制器
 
-Rate limiter allows to postpone the inference execution on some
-model instances such that not all of them runs simultaneously. 
-The model priorities are used to decide which model instance
-to schedule next. 
+要启用速率限制，用户必须在启动tritonserver时设置`--rate-limit`选项。有关更多信息，请参考`tritonserver --help`显示的选项用法。
 
-## Using Rate Limiter
+速率限制器被[速率限制器配置](model_configuration.md#rate-limiter-config)中描述的速率限制器配置控制。速率限制器配置包括实例组定义的实例的[资源](model_configuration.md#resources)和[优先级](model_configuration.md#priority)。
 
-To enable rate limiting users must set `--rate-limit` option when
-launching tritonserver. For more information, consult usage of
-the option emitted by `tritonserver --help`.
+### 资源
 
-The rate limiter is controlled by rate limiter configuration
-described in [rate limiter config](model_configuration.md#rate-limiter-config).
-The rate limiter configuration includes 
-[resources](model_configuration.md#resources) and
-[priority](model_configuration.md#priority) for the instances
-defined by the instance group.
-
-### Resources
-
-Resources are identified by a unique name and a count indicating
-the number of copies of the resource. By default, model instance
-uses no rate-limiter resources. By listing a resource/count the
-model instance indicates that it requires that many resources to
-be available on the model instance device before it can be allowed
-to execute. When under execution the specified many resources are
-allocated to the model instance only to be released when the
-execution is over. The available number of resource copies
-are, by default, the max across all model instances that list that
-resource. For example, assume three loaded model instances A, B
-and C each specifying the following resource requirements for
-a single device:
+资源由一个惟一的名称和一个指示资源副本数量的计数标识。默认情况下，模型实例使用无速率限制的资源。通过列出资源/计数，模型实例表明，在允许执行之前，它需要在模型实例设备上有许多可用的资源。在执行时，指定的许多资源被分配给模型实例，只有在执行结束时才会被释放。默认情况下，资源副本的可用数量是列出该资源的所有模型实例的最大值。例如，假设三个加载的模型实例A、B和C，每个都为单个设备指定了以下资源需求:
 
 ```
 A: [R1: 4, R2: 4]
@@ -80,8 +21,7 @@ B: [R2: 5, R3: 10, R4: 5]
 C: [R1: 1, R3: 7, R4: 2]
 ```
 
-By default, based on those model instance requirements, the server
-will create the following resources with the indicated copies:
+默认情况下，基于这些模型实例需求，服务器将使用指定的副本创建以下资源:
 
 ```
 R1: 4
@@ -90,28 +30,13 @@ R3: 10
 R4: 7
 ```
 
-These values ensure that all model instances can be successfully
-scheduled. The default for a resource can be overridden by giving
-it explicitly on command-line using `--rate-limit-resource` option.
-`tritonserver --help` will provide with more detailed usage
-instructions.
+这些值确保所有模型实例都能被成功调度。资源的默认值可以通过在命令行中使用`--rate-limit-resource`选项显式地指定来覆盖。`tritonserver --help`将提供更详细的使用说明。
 
-By default, the available resource copies are per-device and resource
-requirements for a model instance are enforced against corresponding
-resources associated with the device where the model instance runs.
-The `--rate-limit-resource` allows users to provide different resource
-copies to different devices. Rate limiter can also handle global
-resources. Instead of creating resource copies per-device, a global
-resource will have a single copy all across the system.
+默认情况下，可用的资源副本是针对每个设备的，模型实例的资源需求是对与模型实例运行的设备相关联的相应资源上强制执行的。`--rate-limit-resource`允许用户向不同的设备提供不同的资源副本。速率限制器还可以处理全局资源。全局资源将在整个系统中拥有一个副本，而不是在每个设备上创建资源副本。
 
-Rate limiter depends upon the model configuration to determine
-whether the resource is global or not. See
-[resources](model_configuration.md#resources) for more details on
-how to specify them in model configuration.
+速率限制器取决于模型配置，以确定资源是否是全局的。有关如何在模型配置中指定它们的详细信息，请参阅[资源](model_configuration.md#resources)。
 
-For tritonserver, running on a two device machine, invoked with
-`--rate-limit-resource=R1:10 --rate-limit-resource=R2:5:0 --rate-limit-resource=R2:8:1 --rate-limit-resource=R3:2`
-, available resource copies are:
+对于运行在两个设备机器上的tritonserver，调用`--rate-limit-resource=R1:10 --rate-limit-resource=R2:5:0 --rate-limit-resource=R2:8:1 --rate-limit-resource=R3:2`，可用的资源副本如下:
 
 ```
 GLOBAL   => [R3: 2]
@@ -119,12 +44,8 @@ DEVICE 0 => [R1: 10, R2: 5]
 DEVICE 1 => [R1: 10, R2: 8]
 ```
 
-where R3 appears as a global resource in one of the loaded model.
+其中R3作为全局资源出现在加载的模型之一中。
 
-### Priority
+### 优先级
 
-In a resource constrained system, there will be a contention for
-the resources among model instances to execute their inference
-requests. Priority setting helps determining which model instance
-to select for next execution. See [priority](model_configuration.md#priority)
-for more information.
+在资源受限的系统中，模型实例之间会有资源争用，以执行它们的推理请求。优先级设置有助于确定下一个执行选择哪个模型实例。有关更多信息，请参阅[优先级](model_configuration.md#priority)。
