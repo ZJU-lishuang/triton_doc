@@ -1,50 +1,9 @@
-<!--
-# Copyright (c) 2020-2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+# 性能分析器
 
-# Performance Analyzer
+优化模型的推理性能的一个关键部分是，当您使用不同的优化策略进行试验时，能够度量性能的变化。perf_analyzer应用程序(以前称为perf_client)为Triton Inference Server执行这个任务。perf_analyzer包含在客户端示例中，这些示例可以[从多个来源获得](https://github.com/triton-inference-server/client#getting-the-client-libraries-and-examples)。
 
-A critical part of optimizing the inference performance of your model
-is being able to measure changes in performance as you experiment with
-different optimization strategies. The perf_analyzer application
-(previously known as perf_client) performs this task for the Triton
-Inference Server. The perf_analyzer is included with the client
-examples which are [available from several
-sources](https://github.com/triton-inference-server/client#getting-the-client-libraries-and-examples).
-
-The perf_analyzer application generates inference requests to your
-model and measures the throughput and latency of those requests. To
-get representative results, perf_analyzer measures the throughput and
-latency over a time window, and then repeats the measurements until it
-gets stable values. By default perf_analyzer uses average latency to
-determine stability but you can use the --percentile flag to stabilize
-results based on that confidence level. For example, if
---percentile=95 is used the results will be stabilized using the 95-th
-percentile request latency. For example,
+<!-- 95-th percentile  在样本中，95%的个体都比它更低 -->
+perf_analyzer应用程序向您的模型生成推理请求，并测量这些请求的吞吐量和延迟。为了获得有代表性的结果，perf_analyzer在一个时间窗口内测量吞吐量和延迟，然后重复测量，直到得到稳定的值。默认情况下，perf_analyzer使用平均延迟来确定稳定性，但您可以使用--percentile标志基于该置信度水平上来稳定结果。例如，如果使用--percentile=95，则使用95-th percentile请求延迟来稳定结果。例如,
 
 ```
 $ perf_analyzer -m inception_graphdef --percentile=95
@@ -73,22 +32,11 @@ Inferences/Second vs. Client p95 Batch Latency
 Concurrency: 1, throughput: 69.6 infer/sec, latency 19673 usec
 ```
 
-## Request Concurrency
+## 并发请求
 
-By default perf_analyzer measures your model's latency and throughput
-using the lowest possible load on the model. To do this perf_analyzer
-sends one inference request to Triton and waits for the response.
-When that response is received, the perf_analyzer immediately sends
-another request, and then repeats this process during the measurement
-windows. The number of outstanding inference requests is referred to
-as the *request concurrency*, and so by default perf_analyzer uses a
-request concurrency of 1.
+默认情况下，perf_analyzer使用模型上尽可能低的负载来测量模型的延迟和吞吐量。为此，perf_analyzer向Triton发送一个推理请求并等待响应。当收到响应时，perf_analyzer立即发送另一个请求，然后在测量窗口中重复这个过程。未完成的推理请求的数目视为*并发请求*，因此默认情况下perf_analyzer使用并发请求数为1。
 
-Using the --concurrency-range \<start\>:\<end\>:\<step\> option you can have
-perf_analyzer collect data for a range of request concurrency
-levels. Use the --help option to see complete documentation for this
-and other options. For example, to see the latency and throughput of
-your model for request concurrency values from 1 to 4:
+使用--concurrency-range \<start\>:\<end\>:\<step\>选项，可以让perf_analyzer收集请求并发级别范围的数据。使用--help选项查看此选项和其他选项的完整文档。例如，要查看从1到4的并发请求值的模型的延迟和吞吐量:
 
 ```
 $ perf_analyzer -m inception_graphdef --concurrency-range 1:4
@@ -130,46 +78,25 @@ Concurrency: 3, throughput: 80.4 infer/sec, latency 37283 usec
 Concurrency: 4, throughput: 83 infer/sec, latency 48064 usec
 ```
 
-## Understanding The Output
+## 理解输出
 
-For each request concurrency level perf_analyzer reports latency and
-throughput as seen from the *client* (that is, as seen by
-perf_analyzer) and also the average request latency on the server.
+对于每个并发级别请求，perf_analyzer报告从*客户端*看到的延迟和吞吐量(也就是说，是perf_analyzer看到的)，以及服务器上的平均请求延迟。
 
-The server latency measures the total time from when the request is
-received at the server until the response is sent from the
-server. Because of the HTTP and GRPC libraries used to implement the
-server endpoints, total server latency is typically more accurate for
-HTTP requests as it measures time from first byte received until last
-byte sent. For both HTTP and GRPC the total server latency is
-broken-down into the following components:
+服务器延迟度量从服务器接收到请求到从服务器发送响应的总时间。由于用于实现服务器端点的HTTP和GRPC库，总的服务器延迟通常对HTTP请求更为精确，因为它测量从接收到的第一个字节到发送的最后一个字节的时间。对于HTTP和GRPC，总的服务器延迟被分解为以下组件:
 
-- *queue*: The average time spent in the inference schedule queue by a
-  request waiting for an instance of the model to become available.
-- *compute*: The average time spent performing the actual inference,
-  including any time needed to copy data to/from the GPU.
+- *queue*: 请求在推理调度队列中等待模型实例可使用的平均时间。
+- *compute*: 执行实际推断所花费的平均时间，包括从或者向GPU复制数据所需的时间。
 
-The client latency time is broken-down further for HTTP and GRPC as
-follows:
+HTTP和GRPC的客户端延迟时间进一步细分如下:
 
-- HTTP: *send/recv* indicates the time on the client spent sending the
-  request and receiving the response. *response wait* indicates time
-  waiting for the response from the server.
-- GRPC: *(un)marshal request/response* indicates the time spent
-  marshalling the request data into the GRPC protobuf and
-  unmarshalling the response data from the GRPC protobuf. *response
-  wait* indicates time writing the GRPC request to the network,
-  waiting for the response, and reading the GRPC response from the
-  network.
+- HTTP: *send/recv* 表示客户端发送请求和接收响应所花费的时间。 *response wait* 等待服务器响应的时间。
+- GRPC: *(un)marshal request/response* 表示将请求数据编组到GRPC protobuf和从GRPC protobuf反编组响应数据所花费的时间。 *response wait* 表示向网络写入GRPC请求、等待响应、从网络读取GRPC响应的时间。
 
-Use the verbose (-v) option to perf_analyzer to see more output,
-including the stabilization passes run for each request concurrency
-level.
+使用verbose (-v)选项perf_analyzer查看更多输出，包括为每个并发级别请求运行的稳定通道。
 
-## Visualizing Latency vs. Throughput
+## 可视化 延时 vs. 吞吐量
 
-The perf_analyzer provides the -f option to generate a file containing
-CSV output of the results.
+perf_analyzer提供 -f选项来生成包含结果的CSV输出的文件。
 
 ```
 $ perf_analyzer -m inception_graphdef --concurrency-range 1:4 -f perf.csv
@@ -181,22 +108,19 @@ Concurrency,Inferences/Second,Client Send,Network+Server Send/Recv,Server Queue,
 2,87.2,235,1973,9151,190,11346,17,0,21874,28557,29768,34766
 ```
 
-NOTE: The rows in the CSV file are sorted in an increasing order of throughput (Inferences/Second).
+注意:CSV文件中的行按照吞吐量的递增顺序排序(推理/秒)。
 
-You can import the CSV file into a spreadsheet to help visualize
-the latency vs inferences/second tradeoff as well as see some
-components of the latency. Follow these steps:
+您可以将CSV文件导入到电子表格中，以帮助可视化延迟与推断/秒的权衡，并查看延迟的一些组件。遵循以下步骤:
 
-- Open [this
-  spreadsheet](https://docs.google.com/spreadsheets/d/1S8h0bWBBElHUoLd2SOvQPzZzRiQ55xjyqodm_9ireiw)
-- Make a copy from the File menu "Make a copy..."
-- Open the copy
-- Select the A1 cell on the "Raw Data" tab
-- From the File menu select "Import..."
-- Select "Upload" and upload the file
-- Select "Replace data at selected cell" and then select the "Import data" button
+- 打开 [电子表格](https://docs.google.com/spreadsheets/d/1S8h0bWBBElHUoLd2SOvQPzZzRiQ55xjyqodm_9ireiw)
+- 从文件菜单中"复制"进行复制
+- 打开复制文件
+- 在"原始数据"选项卡上选择A1单元格
+- 从文件菜单找那个选择"导入"
+- 选择"上传"开始上传文件Select "Upload" and upload the file
+- 选择"替换选中单元格的数据"，并选择"导入数据"按钮
 
-## Input Data
+## 输入数据
 
 Use the --help option to see complete documentation for all input
 data options. By default perf_analyzer sends random data to all the
@@ -224,7 +148,7 @@ perf_analyzer to send batch-size 4 requests of shape [ 3, 224, 224 ]:
 $ perf_analyzer -m mymodel -b 4 --shape IMAGE:3,224,224
 ```
 
-## Real Input Data
+## 真实的输入数据
 
 The performance of some models is highly dependent on the data used.
 For such cases you can provide data to be used with every inference
@@ -402,7 +326,7 @@ The following is the example to provide contents as base64 string with explicit 
 }
 ```
 
-### Output Validation
+### 输出验证
 
 When real input data is provided, it is optional to request perf analyzer to
 validate the inference output for the input data.
@@ -437,46 +361,30 @@ and OUTPUT1, all tensors have shape [4, 4] and data type INT32:
 Besides the above example, the validation outputs can be specified in the same
 variations described in "real input data" section.
 
-## Shared Memory
+## 共享内存
 
-By default perf_analyzer sends input tensor data and receives output
-tensor data over the network. You can instead instruct perf_analyzer to
-use system shared memory or CUDA shared memory to communicate tensor
-data. By using these options you can model the performance that you
-can achieve by using shared memory in your application. Use
---shared-memory=system to use system (CPU) shared memory or
---shared-memory=cuda to use CUDA shared memory.
+默认情况下，perf_analyzer通过网络发送输入张量数据并接收输出张量数据。你可以让perf_analyzer使用系统共享内存或CUDA共享内存来通信张量数据。通过使用这些选项，您可以对通过在应用程序中使用共享内存实现的性能进行建模。使用--shared-memory=system使用系统(CPU)共享内存，使用--shared-memory=cuda使用cuda共享内存。
 
-## Communication Protocol
+## 通信协议
 
-By default perf_analyzer uses HTTP to communicate with Triton. The GRPC
-protocol can be specificed with the -i option. If GRPC is selected the
---streaming option can also be specified for GRPC streaming.
+默认情况下 perf_analyzer 使用 HTTP 与 Triton 通信。GRPC 协议可以使用 -i 选项指定。如果选择了 GRPC，也可以为 GRPC 流指定 --streaming 选项。
 
-## Benchmarking Triton directly via C API
+## 直接通过 C API 对 Triton 进行基准测试
 
-Besides using HTTP or gRPC server endpoints to communicate with Triton, perf_analyzer also allows user to benchmark Triton directly using C API. HTTP/gRPC endpoints introduce an additional latency in the pipeline which may not be of interest to the user who is using Triton via C API within their application. Specifically, this feature is useful to benchmark bare minimum Triton without additional overheads from HTTP/gRPC communication.
+除了使用 HTTP 或 gRPC 服务器端点与 Triton 通信外，perf_analyzer 还允许用户直接使用 C API 对 Triton 进行基准测试。HTTP/gRPC 端点在管道中引入了额外的延迟，这对于在其应用程序中通过 C API 调用 Triton 的用户可能没用。具体来说，此功能可用于对最小Triton 进行基准测试，而不会产生 HTTP/gRPC 通信的额外开销。
 
-### Prerequisite
-Pull the Triton SDK and the Inference Server container images on target machine.
-Since you will need access to the Tritonserver install, it might be easier if 
-you copy the perf_analyzer binary to the Inference Server container.
+### 先决条件
+在目标机器上拉取 Triton SDK 和推理服务器容器镜像。由于您需要通过Tritonserver 安装，因此将 perf_analyzer 二进制文件复制到推理服务器容器可能会更容易。
 
-### Required Parameters
-Use the --help option to see complete list of supported command line arguments.
-By default perf_analyzer expects the Triton instance to already be running. You can configure the C API mode using the `--service-kind` option. In additon, you will need to point
-perf_analyzer to the Triton server library path using the `--triton-server-directory` option and the model 
-repository path using the `--model-repository` option.
-If the server is run successfully, there is a prompt: "server is alive!" and perf_analyzer will print the stats, as normal.
-An example run would look like:
+### 需要的参数
+使用 --help 选项查看支持的命令行参数的完整列表。默认情况下 perf_analyzer 期望 Triton 实例已经在运行。 您可以使用`--service-kind` 选项配置 C API 模式。此外，您需要使用`--triton-server-directory`选项将 perf_analyzer 指向 Triton 服务器库路径，并使用`--model-repository`选项指向模型存储库路径。如果服务器运行成功，有提示：“server is alive!” perf_analyzer 将照常打印统计信息。示例运行如下所示：
 ```
 perf_analyzer -m graphdef_int32_int32_int32 --service-kind=triton_c_api --triton-server-directory=/opt/tritonserver --model-repository=/workspace/qa/L0_perf_analyzer_capi/models
 ```
 
-### Non-supported functionalities
-There are a few functionalities that are missing from the C API. They are:
-1. Async mode (`-a`)
-2. Using shared memory mode (`--shared-memory=cuda` or `--shared-memory=system`)
-3. Request rate range mode
-4. For additonal known non-working cases, please refer to 
-   [qa/L0_perf_analyzer_capi/test.sh](https://github.com/triton-inference-server/server/blob/main/qa/L0_perf_analyzer_capi/test.sh#L239-L277)
+### 不支持的功能
+C API 中缺少一些功能。他们是：
+1. 异步模式 (`-a`)
+2. 使用共享内存模式(`--shared-memory=cuda` or `--shared-memory=system`)
+3. 请求速率范围模式
+4. 对于其他已知的非工作案例，请参阅[qa/L0_perf_analyzer_capi/test.sh](https://github.com/triton-inference-server/server/blob/main/qa/L0_perf_analyzer_capi/test.sh#L239-L277)
