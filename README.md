@@ -1,5 +1,5 @@
 <!--
-# Copyright (c) 2018-2021, NVIDIA CORPORATION. All rights reserved.
+# Copyright 2018-2021, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -38,18 +38,20 @@ available as a shared library with a C API that allows the full
 functionality of Triton to be included directly in an
 application.
 
-## What's New in 2.16.0
+## What's New in 2.20.0
 
-* Added support for [LightGBM models with categorical 
-  features](https://github.com/triton-inference-server/fil_backend/tree/r21.11#categorical-feature-support)
-  in FIL backend.
+* Models can now [load from a serialized model_config 
+  message](docs/protocol/extension_model_repository.md#load) 
+  with the Triton Server API.
 
-* Added [Jetson examples](docs/examples/jetson) in documentation.
+* ONNX Runtime, TensorRT, and Tensorflow backends now support server-side,
+  multi-dimensional [ragged batching](docs/ragged_batching.md).
 
-* Completed proof of concept of [Inferentia 
-  support](https://github.com/triton-inference-server/python_backend/tree/r21.11/inferentia#readme).
+* [Cache miss statistics](docs/metrics.md) have been added to the Prometheus 
+  metrics.
 
-* Added ARM Support for Model Analyzer.
+* Trace settings can be configured with the 
+  [Triton Server Trace Protocol](docs/protocol/extension_trace.md).
 
 ## Features
 
@@ -117,28 +119,79 @@ configure your models, how to use the C++ and Python clients, etc. The
 *developer* documentation describes how to build and test Triton and
 also how Triton can be extended with new functionality.
 
-The Triton [Release
-Notes](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)
-and [Support
-Matrix](https://docs.nvidia.com/deeplearning/dgx/support-matrix/index.html)
-indicate the required versions of the NVIDIA Driver and CUDA, and also
-describe supported GPUs.
-
 ### User Documentation
 
 * [QuickStart](docs/quickstart.md)
-  * [Install](docs/quickstart.md#install-triton-docker-image)
-  * [Run](docs/quickstart.md#run-triton)
+  * [Install Triton](docs/quickstart.md#install-triton-docker-image)
+  * [Create Model Repository](docs/quickstart.md#create-a-model-repository)
+  * [Run Triton](docs/quickstart.md#run-triton)
 * [Model Repository](docs/model_repository.md)
+  * [Cloud Storage](docs/model_repository.md#model-repository-locations)
+  * [File Organization](docs/model_repository.md#model-files)
+  * [Model Versioning](docs/model_repository.md#model-versions)
 * [Model Configuration](docs/model_configuration.md)
+  * [Required Model Configuration](docs/model_configuration.md#minimal-model-configuration)
+    * [Maximum Batch Size - Batching and Non-Batching Models](docs/model_configuration.md#maximum-batch-size)
+    * [Input and Output Tensors](docs/model_configuration.md#inputs-and-outputs)
+      * [Tensor Datatypes](docs/model_configuration.md#datatypes)
+      * [Tensor Reshape](docs/model_configuration.md#reshape)
+      * [Shape Tensor](docs/model_configuration.md#shape-tensors)
+  * [Auto-Generate Required Model Configuration](docs/model_configuration.md#auto-generated-model-configuration)
+  * [Version Policy](docs/model_configuration.md#version-policy)
+  * [Instance Groups](docs/model_configuration.md#instance-groups)
+    * [Specifying Multiple Model Instances](docs/model_configuration.md#multiple-model-instances)
+    * [CPU and GPU Instances](docs/model_configuration.md#cpu-model-instance)
+    * [Configuring Rate Limiter](docs/model_configuration.md#rate-limiter-configuration)
+  * [Optimization Settings](docs/model_configuration.md#optimization_policy)
+    * [Framework-Specific Optimization](docs/optimization.md#framework-specific-optimization)
+      * [ONNX-TensorRT](docs/optimization.md#onnx-with-tensorrt-optimization)
+      * [ONNX-OpenVINO](docs/optimization.md#onnx-with-openvino-optimization)
+      * [TensorFlow-TensorRT](docs/optimization.md#tensorflow-with-tensorrt-optimization)
+      * [TensorFlow-Mixed-Precision](docs/optimization.md#tensorflow-automatic-fp16-optimization)
+    * [NUMA Optimization](docs/optimization.md#numa-optimization)
+  * [Scheduling and Batching](docs/model_configuration.md#scheduling-and-batching)
+    * [Default Scheduler - Non-Batching](docs/model_configuration.md#default-scheduler)
+    * [Dynamic Batcher](docs/model_configuration.md#dynamic-batcher)
+      * [How to Configure Dynamic Batcher](docs/model_configuration.md#recommended-configuration-process)
+        * [Delayed Batching](docs/model_configuration.md#delayed-batching)
+        * [Preferred Batch Size](docs/model_configuration.md#preferred-batch-sizes)
+      * [Preserving Request Ordering](docs/model_configuration.md#preserve-ordering)
+      * [Priority Levels](docs/model_configuration.md#priority-levels)
+      * [Queuing Policies](docs/model_configuration.md#queue-policy)
+      * [Ragged Batching](docs/ragged_batching.md)
+    * [Sequence Batcher](docs/model_configuration.md#sequence-batcher)
+      * [Stateful Models](docs/architecture.md#stateful-models)
+      * [Control Inputs](docs/architecture.md#control-inputs)
+      * [Implicit State - Stateful Inference Using a Stateless Model](docs/architecture.md#implicit-state-management)
+      * [Sequence Scheduling Strategies](docs/architecture.md#scheduling-strateties)
+        * [Direct](docs/architecture.md#direct)
+        * [Oldest](docs/architecture.md#oldest)
+    * [Rate Limiter](docs/rate_limiter.md)
+  * [Model Warmup](docs/model_configuration.md#model-warmup)
+  * [Inference Request/Response Cache](docs/model_configuration.md#response-cache)
+* Model Pipeline
+  * [Model Ensemble](docs/architecture.md#ensemble-models)
+  * [Business Logic Scripting (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)
 * [Model Management](docs/model_management.md)
-* [Custom Operations](docs/custom_operations.md)
+  * [Explicit Model Loading and Unloading](docs/model_management.md#model-control-mode-explicit)
+  * [Modifying the Model Repository](docs/model_management.md#modifying-the-model-repository)
+* [Metrics](docs/metrics.md)
+* [Framework Custom Operations](docs/custom_operations.md)
+  * [TensorRT](docs/custom_operations.md#tensorrt)
+  * [TensorFlow](docs/custom_operations.md#tensorflow)
+  * [PyTorch](docs/custom_operations.md#pytorch)
+  * [ONNX](docs/custom_operations.md#onnx)
 * [Client Libraries and Examples](https://github.com/triton-inference-server/client)
-* [Optimization](docs/optimization.md)
+  * [C++ HTTP/GRPC Libraries](https://github.com/triton-inference-server/client#client-library-apis)
+  * [Python HTTP/GRPC Libraries](https://github.com/triton-inference-server/client#client-library-apis)
+  * [Java HTTP Library](https://github.com/triton-inference-server/client/src/java)
+  * GRPC Generated Libraries
+    * [go](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/go)
+    * [Java/Scala](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/java)
+* [Performance Analysis](docs/optimization.md)
   * [Model Analyzer](docs/model_analyzer.md)
   * [Performance Analyzer](docs/perf_analyzer.md)
-* [Metrics](docs/metrics.md)
-* [Rate Limiter](docs/rate_limiter.md)
+  * [Inference Request Tracing](docs/trace.md)
 * [Jetson and JetPack](docs/jetson.md)
 
 The [quickstart](docs/quickstart.md) walks you through all the steps
@@ -177,11 +230,12 @@ efforts. Specifically, you will want to optimize [scheduling and
 batching](docs/architecture.md#models-and-schedulers) and [model
 instances](docs/model_configuration.md#instance-groups) appropriately
 for each model. You can also enable cross-model prioritization using
-[rate limiter](docs/rate_limiter.md) which manages the rate at which
-requests are scheduled on model instances. You may also want to
-consider [ensembling multiple models and pre/post-processing](docs/architecture.md#ensemble-models)
-into a pipeline. In some cases you may find [individual inference
-request trace data](docs/trace.md) useful when optimizing. A
+the [rate limiter](docs/rate_limiter.md) which manages the rate at
+which requests are scheduled on model instances. You may also want to
+consider combining multiple models and pre/post-processing into a
+pipeline using [ensembling](docs/architecture.md#ensemble-models) or
+[Business Logic Scripting
+(BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting). A
 [Prometheus metrics endpoint](docs/metrics.md) allows you to visualize
 and monitor aggregate inference metrics.
 
@@ -193,8 +247,9 @@ As part of your deployment strategy you may want to [explicitly manage
 what models are available by loading and unloading
 models](docs/model_management.md) from a running Triton server. If you
 are using Kubernetes for deployment there are simple examples of how
-to deploy Triton using Kubernetes and Helm, one for
-[GCP](deploy/gcp/README.md) and one for [AWS](deploy/aws/README.md).
+to deploy Triton using Kubernetes and Helm:
+[GCP](deploy/gcp/README.md), [AWS](deploy/aws/README.md), and [NVIDIA
+FleetCommand](deploy/fleetcommand/README.md)
 
 The [version 1 to version 2 migration
 information](docs/v1_to_v2.md) is helpful if you are moving to

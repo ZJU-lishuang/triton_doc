@@ -2,15 +2,15 @@
 
 Triton推理服务器提供了一个针对CPU和GPU优化的云端和边缘端推理解决方案 。Triton支持HTTP/REST和GRPC协议，允许远程客户端请求推理被服务器管理的任何模型。对于边缘部署，Triton可以作为有C接口的动态库，这允许Triton的全部功能被直接包含在一个应用程序中。
 
-## 2.16.0的新特性
+## 2.20.0的新特性
 
-* 在FIL后端支持有[分类功能的LightGBM模型](https://github.com/triton-inference-server/fil_backend/tree/r21.11#categorical-feature-support)。
+* 模型现在可以通过Triton Server API[从序列化的 model_config 信息](docs_zh-CN/protocol/extension_model_repository.md#load) 
 
-* 在文档中添加[Jetson示例](docs_zh-CN/examples/jetson)。
+* ONNX Runtime、TensorRT 和 Tensorflow 后端现在支持服务器端、多维[不规则批处理](docs_zh-CN/ragged_batching.md)。
 
-* 完成对[Inferentia支持](https://github.com/triton-inference-server/python_backend/tree/r21.11/inferentia#readme)概念证明。
+* [缓存未命中统计数据](docs_zh-CN/metrics.md)已添加到 Prometheus 指标中。
 
-* 模型分析增加对ARM的支持。
+* 可以使用[ Triton 服务器跟踪协议](docs_zh-CN/protocol/extension_trace.md)配置跟踪设置。
 
 ## 特性
 
@@ -39,18 +39,76 @@ Triton的[发布说明](https://docs.nvidia.com/deeplearning/triton-inference-se
 ### 用户文档
 
 * [快速开始](docs_zh-CN/quickstart.md)
-  * [安装](docs_zh-CN/quickstart.md#install-triton-docker-image)
-  * [运行](docs_zh-CN/quickstart.md#run-triton)
+  * [安装 Triton](docs_zh-CN/quickstart.md#install-triton-docker-image)
+  * [创建模型存储库](docs_zh-CN/quickstart.md#create-a-model-repository)
+  * [运行 Triton](docs_zh-CN/quickstart.md#run-triton)
 * [模型存储](docs_zh-CN/model_repository.md)
+  * [云存储](doc_zh-CN/model_repository.md#model-repository-locations)
+  * [文件组织](doc_zh-CN/model_repository.md#model-files)
+  * [模型版本](doc_zh-CN/model_repository.md#model-versions)
 * [模型配置](docs_zh-CN/model_configuration.md)
+  * [Required Model Configuration](doc_zh-CN/model_configuration.md#minimal-model-configuration)
+    * [Maximum Batch Size - Batching and Non-Batching Models](doc_zh-CN/model_configuration.md#maximum-batch-size)
+    * [Input and Output Tensors](doc_zh-CN/model_configuration.md#inputs-and-outputs)
+      * [Tensor Datatypes](doc_zh-CN/model_configuration.md#datatypes)
+      * [Tensor Reshape](doc_zh-CN/model_configuration.md#reshape)
+      * [Shape Tensor](doc_zh-CN/model_configuration.md#shape-tensors)
+  * [Auto-Generate Required Model Configuration](doc_zh-CN/model_configuration.md#auto-generated-model-configuration)
+  * [Version Policy](doc_zh-CN/model_configuration.md#version-policy)
+  * [Instance Groups](doc_zh-CN/model_configuration.md#instance-groups)
+    * [Specifying Multiple Model Instances](doc_zh-CN/model_configuration.md#multiple-model-instances)
+    * [CPU and GPU Instances](doc_zh-CN/model_configuration.md#cpu-model-instance)
+    * [Configuring Rate Limiter](doc_zh-CN/model_configuration.md#rate-limiter-configuration)
+  * [Optimization Settings](doc_zh-CN/model_configuration.md#optimization_policy)
+    * [Framework-Specific Optimization](doc_zh-CN/optimization.md#framework-specific-optimization)
+      * [ONNX-TensorRT](doc_zh-CN/optimization.md#onnx-with-tensorrt-optimization)
+      * [ONNX-OpenVINO](doc_zh-CN/optimization.md#onnx-with-openvino-optimization)
+      * [TensorFlow-TensorRT](doc_zh-CN/optimization.md#tensorflow-with-tensorrt-optimization)
+      * [TensorFlow-Mixed-Precision](doc_zh-CN/optimization.md#tensorflow-automatic-fp16-optimization)
+    * [NUMA Optimization](doc_zh-CN/optimization.md#numa-optimization)
+  * [Scheduling and Batching](doc_zh-CN/model_configuration.md#scheduling-and-batching)
+    * [Default Scheduler - Non-Batching](doc_zh-CN/model_configuration.md#default-scheduler)
+    * [Dynamic Batcher](doc_zh-CN/model_configuration.md#dynamic-batcher)
+      * [How to Configure Dynamic Batcher](doc_zh-CN/model_configuration.md#recommended-configuration-process)
+        * [Delayed Batching](doc_zh-CN/model_configuration.md#delayed-batching)
+        * [Preferred Batch Size](doc_zh-CN/model_configuration.md#preferred-batch-sizes)
+      * [Preserving Request Ordering](doc_zh-CN/model_configuration.md#preserve-ordering)
+      * [Priority Levels](doc_zh-CN/model_configuration.md#priority-levels)
+      * [Queuing Policies](doc_zh-CN/model_configuration.md#queue-policy)
+      * [Ragged Batching](doc_zh-CN/ragged_batching.md)
+    * [Sequence Batcher](doc_zh-CN/model_configuration.md#sequence-batcher)
+      * [Stateful Models](doc_zh-CN/architecture.md#stateful-models)
+      * [Control Inputs](doc_zh-CN/architecture.md#control-inputs)
+      * [Implicit State - Stateful Inference Using a Stateless Model](doc_zh-CN/architecture.md#implicit-state-management)
+      * [Sequence Scheduling Strategies](doc_zh-CN/architecture.md#scheduling-strateties)
+        * [Direct](doc_zh-CN/architecture.md#direct)
+        * [Oldest](doc_zh-CN/architecture.md#oldest)
+    * [Rate Limiter](doc_zh-CN/rate_limiter.md)
+  * [Model Warmup](doc_zh-CN/model_configuration.md#model-warmup)
+  * [Inference Request/Response Cache](doc_zh-CN/model_configuration.md#response-cache)
+* Model Pipeline
+  * [Model Ensemble](doc_zh-CN/architecture.md#ensemble-models)
+  * [Business Logic Scripting (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)
 * [模型管理](docs_zh-CN/model_management.md)
-* [自定义操作](docs_zh-CN/custom_operations.md)
+  * [Explicit Model Loading and Unloading](doc_zh-CN/model_management.md#model-control-mode-explicit)
+  * [Modifying the Model Repository](doc_zh-CN/model_management.md#modifying-the-model-repository)
+* [Metrics](doc_zh-CN/metrics.md)
+* [Framework Custom Operations](doc_zh-CN/custom_operations.md)
+  * [TensorRT](doc_zh-CN/custom_operations.md#tensorrt)
+  * [TensorFlow](doc_zh-CN/custom_operations.md#tensorflow)
+  * [PyTorch](doc_zh-CN/custom_operations.md#pytorch)
+  * [ONNX](doc_zh-CN/custom_operations.md#onnx)
 * [客户端的库和示例](https://github.com/triton-inference-server/client)
-* [优化](docs_zh-CN/optimization.md)
+  * [C++ HTTP/GRPC Libraries](https://github.com/triton-inference-server/client#client-library-apis)
+  * [Python HTTP/GRPC Libraries](https://github.com/triton-inference-server/client#client-library-apis)
+  * [Java HTTP Library](https://github.com/triton-inference-server/client/src/java)
+  * GRPC Generated Libraries
+    * [go](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/go)
+    * [Java/Scala](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/java)
+* [Performance Analysis](doc_zh-CN/optimization.md)
   * [模型分析](docs_zh-CN/model_analyzer.md)
   * [性能分析](docs_zh-CN/perf_analyzer.md)
-* [指标](docs_zh-CN/metrics.md)
-* [速率限制器](docs_zh-CN/rate_limiter.md)
+  * [Inference Request Tracing](doc_zh-CN/trace.md)
 * [Jetson和JetPack](docs_zh-CN/jetson.md)
 
 [快速入门](docs_zh-CN/quickstart.md)指导你所有的步骤，包括安装Triton，运行一个分类模型在Triton，使用该模型在客户端示例应用程序执行推理。快速入门也演示了[Triton的支持包括GPU的系统和仅有CPU的系统](docs_zh-CN/quickstart.md#run-triton).
@@ -59,11 +117,12 @@ Triton的[发布说明](https://docs.nvidia.com/deeplearning/triton-inference-se
 
 在Triton中有了可用的模型之后，您将希望从*客户端*应用程序向Triton发送推断和其他请求。[Python和c++客户端库](https://github.com/triton-inference-server/client)提供了API来简化这种通信。还有大量[客户端示例](https://github.com/triton-inference-server/client)演示了如何使用这些库。您还可以使用[HTTP/REST基于json的协议](docs_zh-CN/inference_protocols.md#httprest-and-grpc-protocols)直接向Triton发送HTTP/REST请求，或者[为许多其他语言生成GRPC客户端](https://github.com/triton-inference-server/client)。
 
-理解和[优化性能](docs_zh-CN/optimization.md)是部署模型的重要部分。Triton项目提供了[性能分析器](docs_zh-CN/perf_analyzer.md)和[模型分析器](docs_zh-CN/model_analyzer.md)来帮助您进行优化工作。具体来说，您需要为每个模型适当地优化[调度和批处理](docs_zh-CN/architecture.md#models-and-schedulers)以及[模型实例](docs_zh-CN/model_configuration.md#instance-groups)。您还可以使用[速率限制器](docs_zh-CN/rate_limiter.md)启用跨模型优先级，该速率限制器管理请求在模型实例上调度的速率。您可能还想[集成多个模型和预处理/后处理](docs_zh-CN/architecture.md#ensemble-models)到一个管道中。在某些情况下，您可能会发现在优化时[单个推理请求跟踪数据](docs_zh-CN/trace.md)很有用。[Prometheus指标节点](docs_zh-CN/metrics.md)允许您可视化和监控总体推理指标。
+理解和[优化性能](docs_zh-CN/optimization.md)是部署模型的重要部分。Triton项目提供了[性能分析器](docs_zh-CN/perf_analyzer.md)和[模型分析器](docs_zh-CN/model_analyzer.md)来帮助您进行优化工作。具体来说，您需要为每个模型适当地优化[调度和批处理](docs_zh-CN/architecture.md#models-and-schedulers)以及[模型实例](docs_zh-CN/model_configuration.md#instance-groups)。您还可以使用[速率限制器](docs_zh-CN/rate_limiter.md)启用跨模型优先级，该速率限制器管理请求在模型实例上调度的速率。您可能还想通过[集成](docs_zh-CN/architecture.md#ensemble-models)或[业务逻辑脚本 (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)将多个模型和预处理/后处理组合到一个管道中。[Prometheus指标节点](docs_zh-CN/metrics.md)允许您可视化和监控总体推理指标。
 
 NVIDIA发布了许多使用Triton的[深度学习示例](https://github.com/NVIDIA/DeepLearningExamples)。
 
-作为部署策略的一部分，您可能希望通过在运行的Triton服务器中[通过加载和卸载模型来显示的管理哪些模型可用](docs_zh-CN/model_management.md)。如果你正在使用Kubernetes进行部署，有一些简单的例子可以说明如何使用Kubernetes和Helm部署Triton，一个用于[GCP](deploy/gcp/README.md)，一个用于[AWS](deploy/aws/README.md)。
+作为部署策略的一部分，您可能希望通过在运行的Triton服务器中[通过加载和卸载模型来显示的管理哪些模型可用](docs_zh-CN/model_management.md)。如果你正在使用Kubernetes进行部署，有一些简单的例子可以说明如何使用Kubernetes和Helm部署Triton: [GCP](deploy/gcp/README.md), [AWS](deploy/aws/README.md), [NVIDIA
+FleetCommand](deploy/fleetcommand/README.md)。
 
 如果您从以前使用的版本1迁移到版本2，那么[版本1到版本2的迁移信息](docs_zh-CN/v1_to_v2.md)是很有帮助的。
 
