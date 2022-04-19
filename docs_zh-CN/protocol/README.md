@@ -29,9 +29,9 @@
 # HTTP/REST and GRPC Protocol
 
 This directory contains documents related to the HTTP/REST and GRPC
-protocols used by Triton. Triton uses the [KFServing community
-standard inference
-protocols](https://github.com/kubeflow/kfserving/tree/master/docs/predict-api/v2)
+protocols used by Triton. Triton uses the [KServe community standard
+inference
+protocols](https://github.com/kserve/kserve/tree/master/docs/predict-api/v2)
 plus several extensions that are defined in the following documents:
 
 - [Binary tensor data extension](./extension_binary_data.md)
@@ -42,6 +42,7 @@ plus several extensions that are defined in the following documents:
 - [Sequence extension](./extension_sequence.md)
 - [Shared-memory extension](./extension_shared_memory.md)
 - [Statistics extension](./extension_statistics.md)
+- [Trace extension](./extension_trace.md)
 
 For the GRPC protocol the [protobuf
 specification](https://github.com/triton-inference-server/common/blob/main/protobuf/grpc_service.proto)

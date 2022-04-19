@@ -14,7 +14,7 @@ $ LD_PRELOAD=libtrtcustom.so tritonserver --model-repository=/tmp/models ...
 
 这种方法的一个限制是自定义层必须与模型存储库本身分开管理。更严重的是，如果多个共享库之间存在自定义层名称冲突，则目前无法处理。
 
-在构建自定义层共享库时，使用与 Triton 中使用的相同版本的 TensorRT 非常重要。您可以在[Triton 发行说明](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)中找到 TensorRT 版本。确保您使用正确版本的 TensorRT 的一种简单方法是使用与 Triton 容器对应的[NGC TensorRT容器](https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt)。例如，如果您使用的是 21.11 版本的 Triton，请使用 21.11 版本的 TensorRT 容器。
+在构建自定义层共享库时，使用与 Triton 中使用的相同版本的 TensorRT 非常重要。您可以在[Triton 发行说明](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)中找到 TensorRT 版本。确保您使用正确版本的 TensorRT 的一种简单方法是使用与 Triton 容器对应的[NGC TensorRT容器](https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt)。例如，如果您使用的是 22.03 版本的 Triton，请使用 22.03 版本的 TensorRT 容器。
 
 ## TensorFlow
 
@@ -57,7 +57,7 @@ simple way to ensure you are using the correct version of TensorFlow
 is to use the [NGC TensorFlow
 container](https://ngc.nvidia.com/catalog/containers/nvidia:tensorflow)
 corresponding to the Triton container. For example, if you are using
-the 21.11 version of Triton, use the 21.11 version of the TensorFlow
+the 22.03 version of Triton, use the 22.03 version of the TensorFlow
 container.
 
 ## PyTorch
@@ -101,7 +101,7 @@ simple way to ensure you are using the correct version of PyTorch is
 to use the [NGC PyTorch
 container](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch)
 corresponding to the Triton container. For example, if you are using
-the 21.11 version of Triton, use the 21.11 version of the PyTorch
+the 22.03 version of Triton, use the 22.03 version of the PyTorch
 container.
 
 ## ONNX
