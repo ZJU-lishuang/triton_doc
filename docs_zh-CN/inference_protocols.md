@@ -4,9 +4,9 @@
 
 ## HTTP/REST 和 GRPC 协议
 
-Triton 基于[KFServing项目](https://github.com/kubeflow/kfserving) 提出的[标准推理协议](https://github.com/kubeflow/kfserving/tree/master/docs/predict-api/v2)公开了 HTTP/REST 和 GRPC 端点。为了完全启用所有功能，Triton还实现了对KFServing推理协议的一系列[HTTP/REST 和 GRPC 扩展](https://github.com/triton-inference-server/server/tree/main/docs/protocol)。
+Triton 基于[KServe项目](https://github.com/kserve) 提出的[标准推理协议](https://github.com/kserve/kserve/tree/master/docs/predict-api/v2)公开了 HTTP/REST 和 GRPC 端点。为了完全启用所有功能，Triton还实现了对KServe推理协议的一系列[HTTP/REST 和 GRPC 扩展](https://github.com/triton-inference-server/server/tree/main/docs/protocol)。
 
-HTTP/REST 和 GRPC 协议提供端点来检查服务器和模型的健康状况、元数据和统计信息。其他端点允许模型加载和卸载以及推理。有关详细信息，请参阅 KFServing 和扩展文档。
+HTTP/REST 和 GRPC 协议提供端点来检查服务器和模型的健康状况、元数据和统计信息。其他端点允许模型加载和卸载以及推理。有关详细信息，请参阅 KServe 和扩展文档。
 
 ### HTTP选项
 Triton 为使用 HTTP 协议的服务器-客户端网络事务提供以下配置选项。
