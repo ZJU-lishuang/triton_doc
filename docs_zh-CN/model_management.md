@@ -24,7 +24,7 @@ Triton 尝试在启动时加载模型存储库中的所有模型。Triton 无法
 
 将检测到模型存储库的更改，Triton 将根据这些更改尝试加载和卸载模型。尝试重新加载已加载的模型时，如果由于任何原因重新加载失败，则已加载的模型将保持不变并保持加载状态。如果重新加载成功，新加载的模型将替换已经加载的模型，而不会丢失模型的可用性。
 
-由于 Triton 会定期轮询存储库，因此可能无法立即检测到对模型存储库的更改。您可以使用 --repository-poll-secs 选项控制轮询间隔。控制台日志或[模型就绪协议](https://github.com/kubeflow/kfserving/blob/master/docs/predict-api/v2/required_api.md)或[模型控制协议](protocol/extension_model_repository.md)的索引操作可用于确定模型存储库更改何时生效。
+由于 Triton 会定期轮询存储库，因此可能无法立即检测到对模型存储库的更改。您可以使用 --repository-poll-secs 选项控制轮询间隔。控制台日志或[模型就绪协议](https://github.com/kserve/kserve/blob/master/docs/predict-api/v2/required_api.md)或[模型控制协议](protocol/extension_model_repository.md)的索引操作可用于确定模型存储库更改何时生效。
 
 **警告：Triton 轮询模型存储库与您对存储库进行任何更改之间没有同步。因此，Triton 可以观察到会导致意外行为的部分和不完整的改变。因此，不建议在生产环境中使用 POLL 模式。**
 

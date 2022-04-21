@@ -51,13 +51,7 @@ Concurrency: 8, throughput: 272 infer/sec, latency 35988 usec
 
 与不使用动态批处理器相比，通过八个并发请求，动态批处理器允许 Triton 每秒提供 272 次推理，而不会增加延迟。
 
-您还可以明确指定您希望动态批处理器在创建批处理时首选的批处理大小。例如，要表明您希望动态批处理器首选大小为 4 的批次，您可以像这样修改模型配置（可以给出多个首选大小，但在这种情况下我们只有一个）。
-
-```
-dynamic_batching { preferred_batch_size: [ 4 ]}
-```
-
-除了让 perf_analyzer 收集一系列请求并发值的数据外，我们还可以使用一些简单的规则，这些规则通常适用于 perf_analyzer 与 Triton 在同一系统上运行时。第一条规则是为了最小延迟，将请求并发设置为 1 并禁用动态批处理器并仅使用 1 个[模型实例](#model-instances)。第二条规则是为了获得最大吞吐量，请将请求并发设置为`2 * <preferred batch size> * <model instance count>`。我们将在[下面](#model-instances)讨论模型实例 ，现在我们正在使用一个模型实例。因此，对于首选批量大小 4，我们希望运行 perf_analyzer，请求并发为`2 * 4 * 1 = 8`。
+除了让 perf_analyzer 收集一系列请求并发值的数据外，我们还可以使用一些简单的规则，这些规则通常适用于 perf_analyzer 与 Triton 在同一系统上运行时。第一条规则是为了最小延迟，将请求并发设置为 1 并禁用动态批处理器并仅使用 1 个[模型实例](#model-instances)。第二条规则是为了获得最大吞吐量，请将请求并发设置为`2 * <maximum batch size> * <model instance count>`。我们将在[下面](#model-instances)讨论模型实例 ，现在我们正在使用一个模型实例。因此，对于最大批量大小 4，我们希望运行 perf_analyzer，请求并发为`2 * 4 * 1 = 8`。
 
 ```
 $ perf_analyzer -m inception_graphdef --percentile=95 --concurrency-range 8
@@ -93,7 +87,7 @@ Concurrency: 4, throughput: 108.6 infer/sec, latency 43588 usec
 可以同时启用动态批处理器和多个模型实例，例如，将以下内容添加到模型配置文件中。
 
 ```
-dynamic_batching { preferred_batch_size: [ 4 ] }
+dynamic_batching { }
 instance_group [ { count: 2 }]
 ```
 
@@ -181,7 +175,7 @@ optimization { execution_accelerators {
 ```
 
 The options are described in detail in the
-[ModelOptimizationPolicy](../src/core/model_configuration.proto)
+[ModelOptimizationPolicy](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)
 section of the model configuration protobuf.
 
 As an example of TensorRT optimization applied to a TensorFlow model,

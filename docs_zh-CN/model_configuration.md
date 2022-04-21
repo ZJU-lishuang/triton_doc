@@ -46,9 +46,21 @@
 
 ### 输入和输出
 
-每个模型输入和输出都必须指定名称、数据类型和形状。
+每个模型输入和输出都必须指定名称、数据类型和形状。输入或输出张量指定的名称必须与模型预期的名称匹配。
 
-为输入或输出张量指定的名称必须与模型预期的名称匹配。**TorchScript 命名约定：** 由于TorchScript 模型中没有输入和输出名称，因此在配置中输入和输出的"name"属性必须遵循特定的命名约定，即"\<name\>__\<index\>"。其中\<name\>可以是任何字符串，而 \<index\> 指的是相应输入/输出的位置。这意味着如果有两个输入和两个输出，它们必须命名为：“INPUT__0”、“INPUT__1”和“OUTPUT__0”、“OUTPUT__1”，这样“INPUT__0”指的是第一个输入，INPUT__1 指的是第二个输入，等等。
+#### PyTorch 后端的特殊约定
+
+***命名约定:*** 由于TorchScript 模型中没有输入和输出名称，因此在配置中输入和输出的"name"属性必须遵循特定的命名约定，即"\<name\>__\<index\>"。其中\<name\>可以是任何字符串，而 \<index\> 指的是相应输入/输出的位置。这意味着如果有两个输入和两个输出，它们必须命名为：“INPUT__0”、“INPUT__1”和“OUTPUT__0”、“OUTPUT__1”，这样“INPUT__0”指的是第一个输入，INPUT__1 指的是第二个输入，等等。
+
+***张量字典作为输入:*** PyTorch 后端支持以张量字典的形式将输入传递给模型。仅当模型是*单个*输入，且为从字符串到张量的映射的字典，才支持此功能。例如，如果有一个模型需要如下构成的输入：
+
+```
+{'A': tensor1, 'B': tensor2}
+```
+
+那么配置中的输入字段就不需要遵循"\<name\>__\<index\>"的约定了。相反，在这种情况下，输入的名称必须映射到该特定张量的字符串值'key'。在这种情况下，输入将是"A"和"B"，其中输入"A"代表对应于 tensor1 的值，"B"代表对应于 tensor2 的值。
+
+<br>
 
 输入和输出张量允许的数据类型因模型的类型而异。[数据类型](#datatypes)部分描述了允许的数据类型以及它们如何映射到每个类型的模型的数据类型。
 
@@ -100,6 +112,8 @@
 
 如果 Triton 在推理请求中接收到的输入形状与模型预期的输入形状不匹配，则必须使用 [*reshape* 属性](#reshape)。同样， 如果模型产生的输出形状与 Triton 在响应推理请求时返回的形状不匹配，则必须使用*reshape* 属性。
 
+模型输入通过配置`allow_ragged_batch`，表示输入是[不规则输入](ragged_batching.md#ragged-batching)。该字段与[动态批处理器](#dynamic-batcher)一起使用，以允许在不强制输入在所有请求中具有相同形状的情况下进行批处理。
+
 ## 自动生成模型配置
 
 默认情况下，每个模型都必须提供包含所需设置的模型配置文件。但是，如果 Triton 使用 --strict-model-config=false 选项启动，那么在某些情况下，模型配置文件的所需部分可以由 Triton 自动生成。模型配置的必需部分是[最小模型配置](#minimal-model-configuration)中显示的那些设置。具体来说，TensorRT、TensorFlow 保存的模型和 ONNX 模型不需要模型配置文件，因为 Triton 可以自动导出所有需要的设置。所有其他类型的模型必须提供模型配置文件。
@@ -144,7 +158,6 @@ $ curl localhost:8000/v2/models/<model name>/config
 
 ## 重塑
 <!-- reshape: { shape: [ ] }，reshape后接的shape是模型推理的形状，dims是推理API输入或输出的形状-->
--------
 
 模型配置输入或输出上的*ModelTensorReshape*属性用于表明推理 API 接受的输入或输出形状与底层模型框架或自定义后端预期或生成的输入或输出形状不同。
 
@@ -214,11 +227,11 @@ $ curl localhost:8000/v2/models/<model name>/config
 
 每个模型可以有一个或多个[版本](model_repository.md#model-versions)。模型配置的 *ModelVersionPolicy*属性用于设置以下策略之一。
 
-* *All*: 模型存储库中可用的所有模型版本都可用于推理。
+* *All*: 模型存储库中可用的所有模型版本都可用于推理。```version_policy: { all: {}}```
 
-* *Latest*: 只有存储库中模型的最新的‘n’版本可用于推理。模型的最新版本是数字上最大的版本号。
+* *Latest*: 只有存储库中模型的最新的‘n’版本可用于推理。模型的最新版本是数字上最大的版本号。```version_policy: { latest: { num_versions: 2}}```
 
-* *Specific*: 只有模型中特别列出的版本可用于推理。
+* *Specific*: 只有模型中特别列出的版本可用于推理。```version_policy: { specific: { versions: [1,3]}}```
 
 如果未指定版本策略，则使用*Latest*（n=1）作为默认值，表示 Triton 仅提供模型的最新版本。在所有情况下，从模型存储库中[添加或删除版本子目录](model_management.md)都可以更改在后续推理请求中使用的模型版本。
 
@@ -253,6 +266,8 @@ $ curl localhost:8000/v2/models/<model name>/config
 
 Triton 可以提供多个[模型的实例](architecture.md#concurrent-model-execution)，以便可以同时处理该模型的多个推理请求。模型配置*ModelInstanceGroup*属性用于指定应该可用的执行实例的数量以及应该为这些实例使用的计算资源。
 
+### 多个模型实例
+
 默认情况下，为系统中可用的每个 GPU 创建模型的单个执行实例。实例组设置可用于在每个 GPU 上或仅在某些 GPU 上放置模型的多个执行实例。例如，以下配置将在每个系统 GPU 上放置模型的两个执行实例。
 
 ```
@@ -281,6 +296,8 @@ Triton 可以提供多个[模型的实例](architecture.md#concurrent-model-exec
   ]
 ```
 
+### CPU 模型实例
+
 实例组设置还用于启用模型在 CPU 上的执行。即使系统中有 GPU 可用，模型也可以在 CPU 上执行。下面将两个执行实例放在 CPU 上。
 
 ```
@@ -291,6 +308,8 @@ Triton 可以提供多个[模型的实例](architecture.md#concurrent-model-exec
     }
   ]
 ```
+
+### 宿主机策略
 
 实例组设置与主机策略相关联。以下配置会将实例组设置创建的所有实例与主机策略“policy_0”相关联。默认情况下，主机策略将根据实例的设备类型进行设置，例如，KIND_CPU 为“cpu”，KIND_MODEL 为“model”，KIND_GPU 为“gpu_\<gpu_id\>”。
 
@@ -360,6 +379,8 @@ Triton 通过允许单个推理请求指定一批输入来支持批量推理。�
 
 使用模型配置中的*ModelDynamicBatching*属性为每个模型单独启用和配置动态批处理。这些设置控制动态创建的批处理的首选大小、请求可以在调度程序中延迟以允许其他请求加入动态批处理的最长时间，以及队列属性，例如队列大小、优先级和超时.
 
+#### 推荐的配置过程
+
 下面详细介绍各个设置。以下步骤是为每个模型调整动态批处理器的推荐过程。还可以使用[模型分析器](model_analyzer.md)自动搜索不同的动态批处理器配置。
 
 * 确定模型的 [最大批量大小](#maximum-batch-size) 。
@@ -382,7 +403,9 @@ Triton 通过允许单个推理请求指定一批输入来支持批量推理。�
 
 #### 首选批处理大小
 
-*preferred_batch_size*属性表示动态批处理器应尝试创建的批处理大小。例如，以下配置启用动态批处理，首选批处理大小为 4 和 8。
+*preferred_batch_size*属性表示动态批处理器应该尝试创建的批处理大小。对大多数模型，不应该指定*preferred_batch_size*，如[推荐的配置过程](#recommended-configuration-process)中所述。一个例外是 TensorRT 模型，它为不同的批量大小指定了多个优化配置文件。在这种情况下，由于与其他优化配置文件相比，某些优化配置文件可能会显着提高性能，因此将*preferred_batch_size*用于那些高性能优化配置文件支持的批处理大小可能是有意义的。
+
+以下示例显示了启用动态批处理的配置，首选批处理大小为 4 和 8。
 
 ```
   dynamic_batching {
@@ -400,12 +423,11 @@ Triton 通过允许单个推理请求指定一批输入来支持批量推理。�
 
 ```
   dynamic_batching {
-    preferred_batch_size: [ 4, 8 ]
     max_queue_delay_microseconds: 100
   }
 ```
 
-当无法创建首选大小的批处理时，*max_queue_delay_microseconds*属性设置会改变动态批处理器行为。当无法从可用请求创建首选大小的批处理时，只要请求的延迟时间没有超过配置的*max_queue_delay_microseconds*值，动态批处理器就会延迟发送批处理。如果在此延迟期间有新请求到达并允许动态批处理器形成首选大小的批处理，则立即发送该批处理以进行推理。如果延迟到期，动态批处理器会按原样发送批处理，即使它不是首选大小。
+当无法创建最大尺寸（或首选尺寸）批大小时，*max_queue_delay_microseconds*属性设置会改变动态批处理器行为。当无法从可用请求创建最大或首选大小的批处理时，只要请求的延迟时间没有超过配置的*max_queue_delay_microseconds*值，动态批处理器就会延迟发送批处理。如果在此延迟期间有新请求到达并允许动态批处理器形成最大或首选大小的批处理，则立即发送该批处理以进行推理。如果延迟到期，动态批处理器会按原样发送批处理，即使它不是最大或首选大小。
 
 #### 保留顺序
 
@@ -447,7 +469,7 @@ Triton 通过允许单个推理请求指定一批输入来支持批量推理。�
 
 模型配置*ModelWarmup*用于指定模型的预热设置。这些设置定义了 Triton 将创建的一系列推理请求，以预热每个模型实例。仅当模型实例成功完成请求时才会提供服务。请注意，预热模型的效果因框架后端而异，这会导致 Triton 对模型更新的响应速度较慢，因此用户应尝试并选择适合自己需要的配置。有关当前可用的设置，请参阅 protobuf 文档。
 
-## 响应缓存 (测试版)
+## 响应缓存
 
 模型配置`response_cache`部分有一个`enable`布尔值，用于为此模型启用响应缓存。除了在模型配置中启用缓存外，启动服务器时还必须设置一个非零值的`--response-cache-byte-size`。
 
@@ -458,4 +480,3 @@ response_cache {
 ```
 
 请参阅[响应缓存](https://github.com/triton-inference-server/server/blob/main/docs/response_cache.md)和[模型配置protobuf](https://github.com/triton-inference-server/common/blob/main/protobuf/model_config.proto)。文档以获取更多信息。
-

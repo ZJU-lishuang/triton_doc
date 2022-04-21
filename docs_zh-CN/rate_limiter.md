@@ -9,7 +9,10 @@
 
 要启用速率限制，用户必须在启动tritonserver时设置`--rate-limit`选项。有关更多信息，请参考`tritonserver --help`显示的选项用法。
 
-速率限制器被[速率限制器配置](model_configuration.md#rate-limiter-config)中描述的速率限制器配置控制。速率限制器配置包括实例组定义的实例的[资源](model_configuration.md#resources)和[优先级](model_configuration.md#priority)。
+The rate limiter is controlled by the rate limiter configuration given
+for each model instance, as described in [rate limiter
+configuration](model_configuration.md#rate-limiter-configuration).
+如[速率限制器配置](model_configuration.md#rate-limiter-configuration)所述，速率限制器被每个模型实例中的速率限制器配置所控制。速率限制器配置包括实例组定义的模型实例的[资源](model_configuration.md#resources)和[优先级](model_configuration.md#priority)。
 
 ### 资源
 

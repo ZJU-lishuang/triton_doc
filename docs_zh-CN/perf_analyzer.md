@@ -369,6 +369,37 @@ variations described in "real input data" section.
 
 默认情况下 perf_analyzer 使用 HTTP 与 Triton 通信。GRPC 协议可以使用 -i 选项指定。如果选择了 GRPC，也可以为 GRPC 流指定 --streaming 选项。
 
+### SSL/TLS Support
+
+perf_analyzer 可用于在启用 SSL/TLS 的端点后对 Triton 服务进行基准测试。这些选项可以帮助建立与端点的安全连接并配置服务器。
+
+对于 gRPC，请参阅以下选项：
+
+* `--ssl-grpc-use-ssl`
+* `--ssl-grpc-root-certifications-file`
+* `--ssl-grpc-private-key-file`
+* `--ssl-grpc-certificate-chain-file`
+
+更多详细信息: https://grpc.github.io/grpc/cpp/structgrpc_1_1_ssl_credentials_options.html
+
+[推理协议 gRPC SSL/TLS 部分](inference_protocols.md#ssltls)描述了在 Triton 的 gRPC 端点中配置 SSL/TLS的服务器端选项。
+
+对于 HTTPS，公开了以下选项：
+
+* `--ssl-https-verify-peer`
+* `--ssl-https-verify-host`
+* `--ssl-https-ca-certificates-file`
+* `--ssl-https-client-certificate-file`
+* `--ssl-https-client-certificate-type`
+* `--ssl-https-private-key-file`
+* `--ssl-https-private-key-type`
+
+通过`--help`查看完整的文档。
+
+与 gRPC 不同，Triton 的 HTTP 服务器端点无法配置 SSL/TLS 支持。
+
+注意：仅向 perf_analyzer 提供这些`--ssl-http-*`选项并不能确保在通信中使用 SSL/TLS。如果服务端点上未启用 SSL/TLS，则这些选项无效。向 perf_analyzer 用户公开这些选项的目的是允许他们配置 perf_analyzer 以在启用 SSL/TLS 的端点后对 Triton 服务进行基准测试。换句话说，如果 Triton 在 HTTPS 服务器代理后面运行，那么这些选项将允许 perf_analyzer 通过公开的 HTTPS 代理来分析 Triton。
+
 ## 直接通过 C API 对 Triton 进行基准测试
 
 除了使用 HTTP 或 gRPC 服务器端点与 Triton 通信外，perf_analyzer 还允许用户直接使用 C API 对 Triton 进行基准测试。HTTP/gRPC 端点在管道中引入了额外的延迟，这对于在其应用程序中通过 C API 调用 Triton 的用户可能没用。具体来说，此功能可用于对最小Triton 进行基准测试，而不会产生 HTTP/gRPC 通信的额外开销。
