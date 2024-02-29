@@ -1,185 +1,147 @@
-# Triton推理服务器
+# Triton 推理服务器
 
-Triton推理服务器提供了一个针对CPU和GPU优化的云端和边缘端推理解决方案 。Triton支持HTTP/REST和GRPC协议，允许远程客户端请求推理被服务器管理的任何模型。对于边缘部署，Triton可以作为有C接口的动态库，这允许Triton的全部功能被直接包含在一个应用程序中。
+Triton Inference Server是一个开源的推理服务软件，用于简化AI推理过程。Triton使团队能够从多个深度学习和机器学习框架中部署任何AI模型，包括TensorRT、TensorFlow、PyTorch、ONNX、OpenVINO、Python、RAPIDS FIL等。Triton Inference Server支持在云、数据中心、边缘和嵌入式设备上的NVIDIA GPU、x86和ARM CPU，或AWS Inferentia上进行推理。Triton Inference Server为多种查询类型提供了优化的性能，包括实时、批量、组合以及音频/视频流。Triton Inference Server是[NVIDIA AI Enterprise](https://www.nvidia.com/en-us/data-center/products/ai-enterprise/)软件平台的一部分，该平台可加速数据科学管道并简化生产AI的开发和部署。
 
-## 2.20.0的新特性
+主要功能包括：
 
-* 模型现在可以通过Triton Server API[从序列化的 model_config 信息](docs_zh-CN/protocol/extension_model_repository.md#load) 
+- [支持多种深度学习框架](https://github.com/triton-inference-server/backend#where-can-i-find-all-the-backends-that-are-available-for-triton)
+- [支持多种机器学习框架](https://github.com/triton-inference-server/fil_backend)
+- [并发模型执行](docs/user_guide/architecture.md#concurrent-model-execution)
+- [动态批处理](docs/user_guide/model_configuration.md#dynamic-batcher)
+- 有状态模型的[序列批处理](docs/user_guide/model_configuration.md#sequence-batcher)和[隐式状态管理](docs/user_guide/architecture.md#implicit-state-management)
+- 提供[Backend API](https://github.com/triton-inference-server/backend)，允许添加自定义后端和预/后处理操作
+- 支持用 python 编写自定义后端, 也称为[Python-based backends.](https://github.com/triton-inference-server/backend/blob/r24.01/docs/python_based_backends.md#python-based-backends)
+- 模型流水线使用[集成](docs/user_guide/architecture.md#ensemble-models)或者[业务逻辑脚本 (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)
+- [HTTP/REST and GRPC inference protocols](docs/customization_guide/inference_protocols.md)基于社区开发的[KServe protocol](https://github.com/kserve/kserve/tree/master/docs/predict-api/v2)
+- [C API](docs/customization_guide/inference_protocols.md#in-process-triton-server-api)和[Java API](docs/customization_guide/inference_protocols.md#java-bindings-for-in-process-triton-server-api)允许 Triton 直接链接到您的应用程序，用于边缘和其他进程内用例
+- [Metrics](docs/user_guide/metrics.md)表示GPU利用率，服务器吞吐量，服务器延时等
 
-* ONNX Runtime、TensorRT 和 Tensorflow 后端现在支持服务器端、多维[不规则批处理](docs_zh-CN/ragged_batching.md)。
+**不熟悉 Triton 推理服务器？** 利用[这些教程](https://github.com/triton-inference-server/tutorials)开始您的Triton之旅！
 
-* [缓存未命中统计数据](docs_zh-CN/metrics.md)已添加到 Prometheus 指标中。
+加入[Triton and TensorRT 社区](https://www.nvidia.com/en-us/deep-learning-ai/triton-tensorrt-newsletter/)可以随时了解最新的产品更新、错误修复、内容、最佳实践和更多内容。需要企业支持？NVIDIA 全球支持可用于具有[NVIDIA AI Enterprise 软件套件](https://www.nvidia.com/en-us/data-center/products/ai-enterprise/)的Triton推理服务器。
 
-* 可以使用[ Triton 服务器跟踪协议](docs_zh-CN/protocol/extension_trace.md)配置跟踪设置。
+##  3个简单步骤即可提供模型服务
 
-## 特性
+```bash
+# Step 1: Create the example model repository
+git clone -b r24.01 https://github.com/triton-inference-server/server.git
+cd server/docs/examples
+./fetch_models.sh
 
-* [多个深度学习框架](https://github.com/triton-inference-server/backend). Triton可以管理任意数量和格式的模型（受系统盘和内存资源限制）。Triton支持TensorRT, TensorFlow GraphDef,TensorFlow SavedModel, ONNX, PyTorch TorchScript和OpenVINO模型格式。TensorFlow 1.x和TensorFlow 2.x同时被支持。Triton也支持TensorFlow-TensorRT和ONNX-TensorRT的整合模型。
+# Step 2: Launch triton from the NGC Triton container
+docker run --gpus=1 --rm --net=host -v ${PWD}/model_repository:/models nvcr.io/nvidia/tritonserver:24.01-py3 tritonserver --model-repository=/models
 
-* [模型并发执行](docs_zh-CN/architecture.md#concurrent-model-execution). 多模型（或者同模型的多个实例）能同时运行在同一GPU或多个GPU上。
+# Step 3: Sending an Inference Request
+# In a separate console, launch the image_client example from the NGC Triton SDK container
+docker run -it --rm --net=host nvcr.io/nvidia/tritonserver:24.01-py3-sdk
+/workspace/install/bin/image_client -m densenet_onnx -c 3 -s INCEPTION /workspace/images/mug.jpg
 
-* [动态批处理](docs_zh-CN/architecture.md#models-and-schedulers).对支持批处理的模型，Triton实现了多种调度和批处理的算法，将单个推理请求组合在一起来提高推理的吞吐量。这些调度和批处理决策对请求推理的客户端是透明的。
+# Inference should return the following
+Image '/workspace/images/mug.jpg':
+    15.346230 (504) = COFFEE MUG
+    13.224326 (968) = CUP
+    10.422965 (505) = COFFEEPOT
+```
+关于这个例子的其他信息，请阅读[快速入门](docs/getting_started/quickstart.md)指南。快速入门指南还包含如何在[CPU-only 系统](docs/getting_started/quickstart.md#run-on-cpu-only-system)上启动 Triton的示例。Triton的新手，想知道从哪里开始？观看[入门视频](https://youtu.be/NQDtfSi5QF4)。
 
-* [可扩展后端](https://github.com/triton-inference-server/backend). 在深度学习框架之外，Triton提供一个*后端API*，允许用[Python](https://github.com/triton-inference-server/python_backend)或[C++](https://github.com/triton-inference-server/backend/blob/main/README.md#triton-backend-api)实现任何模型执行逻辑对Triton进行扩展，同时仍然受益于Triton提供的CPU和GPU支持，并发执行，动态批处理和其它特性。
+## 示例和教程
 
-* [模型管道](docs_zh-CN/architecture.md#ensemble-models). Triton*集合*代表一个或多个的模型管道，以及这些模型间输入和输出张量的连接。对集合的单个推理请求将触发整个管道的执行。
+查看[NVIDIA LaunchPad](https://www.nvidia.com/en-us/data-center/products/ai-enterprise-suite/trial/)，使用NVIDIA基础设施上托管的Triton推理服务器免费访问一组动手实验。
 
-* [HTTP/REST和GRPC推理协议](docs_zh-CN/inference_protocols.md)基于社区开发的[KFServing协议](https://github.com/kubeflow/kfserving/tree/master/docs_zh-CN/predict-api/v2).
-
-* [C接口](docs_zh-CN/inference_protocols.md#c-api)允许Triton直接链接到你的应用程序中，用于边缘和其它进程中的用例。
-
-* [指标](docs_zh-CN/metrics.md)显示GPU利用率，服务器吞吐量和延时。指标以Prometheus数据格式提供。
+流行的模型如 ResNet、BERT 和 DLRM的特定端到端示例位于GitHub上的[NVIDIA 深度学习示例](https://github.com/NVIDIA/DeepLearningExamples)中。[NVIDIA 开发专区](https://developer.nvidia.com/nvidia-triton-inference-server)包含其他文档、演示文稿和示例。
 
 ## 文档
 
-[Triton体系结构](docs_zh-CN/architecture.md)提供了对推理服务器结构和能力的高级概述。 这也有一个[FAQ](docs_zh-CN/faq.md)。另外的文档分为[*用户*](#user-documentation)和[*开发者*](#developer-documentation) 部分。*用户*文档描述了如何使用Triton作为一个推理解决方案，包括如何配置Triton，如何组织和配置你的模型，如何使用C++和Python的客户端等。*开发者*文档描述了如何构建和测试Triton，以及如何扩展Triton的新特性。
+### 构建和部署
 
-Triton的[发布说明](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)和[支持矩阵](https://docs.nvidia.com/deeplearning/dgx/support-matrix/index.html)表明了NVIDIA驱动和CUDA版本的要求，以及支持的GPUs。
+构建和使用 Triton 推理服务器的推荐方法是使用 Docker 镜像。
 
-### 用户文档
+- [Install Triton Inference Server with Docker containers](docs/customization_guide/build.md#building-with-docker) (*推荐*)
+- [Install Triton Inference Server without Docker containers](docs/customization_guide/build.md#building-without-docker)
+- [Build a custom Triton Inference Server Docker container](docs/customization_guide/compose.md)
+- [Build Triton Inference Server from source](docs/customization_guide/build.md#building-on-unsupported-platforms)
+- [Build Triton Inference Server for Windows 10](docs/customization_guide/build.md#building-for-windows-10)
+- 在 [GCP](deploy/gcp/README.md)、[AWS](deploy/aws/README.md) 和 [NVIDIA FleetCommand](deploy/fleetcommand/README.md) 上使用 Kubernetes 和 Helm 部署 Triton 推理服务器的示例
+- [安全部署注意事项](docs/customization_guide/deploy.md)
 
-* [快速开始](docs_zh-CN/quickstart.md)
-  * [安装 Triton](docs_zh-CN/quickstart.md#install-triton-docker-image)
-  * [创建模型存储库](docs_zh-CN/quickstart.md#create-a-model-repository)
-  * [运行 Triton](docs_zh-CN/quickstart.md#run-triton)
-* [模型存储](docs_zh-CN/model_repository.md)
-  * [云存储](doc_zh-CN/model_repository.md#model-repository-locations)
-  * [文件组织](doc_zh-CN/model_repository.md#model-files)
-  * [模型版本管理](doc_zh-CN/model_repository.md#model-versions)
-* [模型配置](docs_zh-CN/model_configuration.md)
-  * [所需的模型配置](doc_zh-CN/model_configuration.md#minimal-model-configuration)
-    * [最大批处理大小 - 批处理和非批处理模型](doc_zh-CN/model_configuration.md#maximum-batch-size)
-    * [输入和输出张量](doc_zh-CN/model_configuration.md#inputs-and-outputs)
-      * [张量数据类型](doc_zh-CN/model_configuration.md#datatypes)
-      * [张量reshape](doc_zh-CN/model_configuration.md#reshape)
-      * [形状张量](doc_zh-CN/model_configuration.md#shape-tensors)
-  * [模型配置自动生成](doc_zh-CN/model_configuration.md#auto-generated-model-configuration)
-  * [版本策略](doc_zh-CN/model_configuration.md#version-policy)
-  * [实例组](doc_zh-CN/model_configuration.md#instance-groups)
-    * [指定多个模型实例](doc_zh-CN/model_configuration.md#multiple-model-instances)
-    * [CPU和GPU实例](doc_zh-CN/model_configuration.md#cpu-model-instance)
-    * [速率限制器配置](doc_zh-CN/model_configuration.md#rate-limiter-configuration)
-  * [优化设定](doc_zh-CN/model_configuration.md#optimization_policy)
-    * [特定框架优化](doc_zh-CN/optimization.md#framework-specific-optimization)
-      * [ONNX-TensorRT](doc_zh-CN/optimization.md#onnx-with-tensorrt-optimization)
-      * [ONNX-OpenVINO](doc_zh-CN/optimization.md#onnx-with-openvino-optimization)
-      * [TensorFlow-TensorRT](doc_zh-CN/optimization.md#tensorflow-with-tensorrt-optimization)
-      * [TensorFlow-Mixed-Precision](doc_zh-CN/optimization.md#tensorflow-automatic-fp16-optimization)
-    * [NUMA 优化](doc_zh-CN/optimization.md#numa-optimization)
-  * [调度和批处理](doc_zh-CN/model_configuration.md#scheduling-and-batching)
-    * [默认调度 - 非批处理](doc_zh-CN/model_configuration.md#default-scheduler)
-    * [动态批处理器](doc_zh-CN/model_configuration.md#dynamic-batcher)
-      * [如何配置动态批处理器](doc_zh-CN/model_configuration.md#recommended-configuration-process)
-        * [延迟批处理](doc_zh-CN/model_configuration.md#delayed-batching)
-        * [首选批处理大小](doc_zh-CN/model_configuration.md#preferred-batch-sizes)
-      * [保留请求排序](doc_zh-CN/model_configuration.md#preserve-ordering)
-      * [优先级](doc_zh-CN/model_configuration.md#priority-levels)
-      * [排队策略](doc_zh-CN/model_configuration.md#queue-policy)
-      * [尺寸不一致的批处理](doc_zh-CN/ragged_batching.md)
-    * [序列批处理器](doc_zh-CN/model_configuration.md#sequence-batcher)
-      * [有状态模型](doc_zh-CN/architecture.md#stateful-models)
-      * [控制输入](doc_zh-CN/architecture.md#control-inputs)
-      * [隐式状态 - 使用无状态模型的状态推理](doc_zh-CN/architecture.md#implicit-state-management)
-      * [序列调度策略](doc_zh-CN/architecture.md#scheduling-strateties)
-        * [直接的](doc_zh-CN/architecture.md#direct)
-        * [最旧的](doc_zh-CN/architecture.md#oldest)
-    * [速率限制器](doc_zh-CN/rate_limiter.md)
-  * [模型热身](doc_zh-CN/model_configuration.md#model-warmup)
-  * [推理请求/响应 缓存](doc_zh-CN/model_configuration.md#response-cache)
-* 模型管道
-  * [模型集成](doc_zh-CN/architecture.md#ensemble-models)
-  * [业务逻辑脚本 (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)
-* [模型管理](docs_zh-CN/model_management.md)
-  * [显式模型加载和卸载](doc_zh-CN/model_management.md#model-control-mode-explicit)
-  * [修改模型存储库](doc_zh-CN/model_management.md#modifying-the-model-repository)
-* [指标](doc_zh-CN/metrics.md)
-* [框架自定义操作](doc_zh-CN/custom_operations.md)
-  * [TensorRT](doc_zh-CN/custom_operations.md#tensorrt)
-  * [TensorFlow](doc_zh-CN/custom_operations.md#tensorflow)
-  * [PyTorch](doc_zh-CN/custom_operations.md#pytorch)
-  * [ONNX](doc_zh-CN/custom_operations.md#onnx)
-* [客户端的库和示例](https://github.com/triton-inference-server/client)
-  * [C++ HTTP/GRPC 库](https://github.com/triton-inference-server/client#client-library-apis)
-  * [Python HTTP/GRPC 库](https://github.com/triton-inference-server/client#client-library-apis)
-  * [Java HTTP 库](https://github.com/triton-inference-server/client/src/java)
-  * GRPC 生成的库
-    * [go](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/go)
-    * [Java/Scala](https://github.com/triton-inference-server/client/tree/main/src/grpc_generated/java)
-* [性能分析](doc_zh-CN/optimization.md)
-  * [模型分析器](docs_zh-CN/model_analyzer.md)
-  * [性能分析器](docs_zh-CN/perf_analyzer.md)
-  * [推理请求跟踪](doc_zh-CN/trace.md)
-* [Jetson和JetPack](docs_zh-CN/jetson.md)
+### 使用 Triton
 
-[快速入门](docs_zh-CN/quickstart.md)指导你所有的步骤，包括安装Triton，运行一个分类模型在Triton，使用该模型在客户端示例应用程序执行推理。快速入门也演示了[Triton的支持包括GPU的系统和仅有CPU的系统](docs_zh-CN/quickstart.md#run-triton).
+#### 为 Triton 推理服务器准备模型
 
-使用Triton服务于你的模型的第一步是将一个或多个模型放在一个[模型存储](docs_zh-CN/model_repository.md)中。使用Triton服务于模型的第一步是将一个或多个模型放入[模型存储库](docs_zh-CN/model_repository.md)中。这是可选的，根据模型的类型以及您希望为模型启用的Triton功能，您可能需要为模型创建一个[模型配置](docs_zh-CN/model_configuration.md)。如果你的模型有[自定义操作](docs_zh-CN/custom_operations.md)，你需要确保它们被Triton正确加载。
+使用 Triton 为您的模型提供服务的第一步是放置一个或更多模型进入[模型存储库](docs/user_guide/model_repository.md)中。根据模型的类型以及要为模型启用的 Triton 功能，您可能需要为模型创建一个[模型配置](docs/user_guide/model_configuration.md)。
 
-在Triton中有了可用的模型之后，您将希望从*客户端*应用程序向Triton发送推断和其他请求。[Python和c++客户端库](https://github.com/triton-inference-server/client)提供了API来简化这种通信。还有大量[客户端示例](https://github.com/triton-inference-server/client)演示了如何使用这些库。您还可以使用[HTTP/REST基于json的协议](docs_zh-CN/inference_protocols.md#httprest-and-grpc-protocols)直接向Triton发送HTTP/REST请求，或者[为许多其他语言生成GRPC客户端](https://github.com/triton-inference-server/client)。
+- [如果模型需要，将自定义操作添加到 Triton](docs/user_guide/custom_operations.md)
+- 使用[模型集成](docs/user_guide/architecture.md#ensemble-models)和[业务逻辑脚本 (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)启用模型流水线
+- 优化模型，设置[调度和批处理](docs/user_guide/architecture.md#models-and-schedulers)参数以及[模型示例](docs/user_guide/model_configuration.md#instance-groups)
+- 使用[模型分析工具](https://github.com/triton-inference-server/model_analyzer)通过分析帮助优化模型配置
+- 了解如何[通过加载和卸载模型明确管理哪些模型可用](docs/user_guide/model_management.md)
 
-理解和[优化性能](docs_zh-CN/optimization.md)是部署模型的重要部分。Triton项目提供了[性能分析器](docs_zh-CN/perf_analyzer.md)和[模型分析器](docs_zh-CN/model_analyzer.md)来帮助您进行优化工作。具体来说，您需要为每个模型适当地优化[调度和批处理](docs_zh-CN/architecture.md#models-and-schedulers)以及[模型实例](docs_zh-CN/model_configuration.md#instance-groups)。您还可以使用[速率限制器](docs_zh-CN/rate_limiter.md)启用跨模型优先级，该速率限制器管理请求在模型实例上调度的速率。您可能还想通过[集成](docs_zh-CN/architecture.md#ensemble-models)或[业务逻辑脚本 (BLS)](https://github.com/triton-inference-server/python_backend#business-logic-scripting)将多个模型和预处理/后处理组合到一个管道中。[Prometheus指标节点](docs_zh-CN/metrics.md)允许您可视化和监控总体推理指标。
+#### 配置和使用 Triton 推理服务器
 
-NVIDIA发布了许多使用Triton的[深度学习示例](https://github.com/NVIDIA/DeepLearningExamples)。
+- 阅读[快速入门指南](docs/getting_started/quickstart.md)以在 GPU 和 CPU 上运行Triton 推理服务器
+- Triton 支持多种执行引擎，称为
+[backends](https://github.com/triton-inference-server/backend#where-can-i-find-all-the-backends-that-are-available-for-triton)，包括 
+  [TensorRT](https://github.com/triton-inference-server/tensorrt_backend),
+  [TensorFlow](https://github.com/triton-inference-server/tensorflow_backend),
+  [PyTorch](https://github.com/triton-inference-server/pytorch_backend),
+  [ONNX](https://github.com/triton-inference-server/onnxruntime_backend),
+  [OpenVINO](https://github.com/triton-inference-server/openvino_backend),
+  [Python](https://github.com/triton-inference-server/python_backend),和其它。
+- 并非 Triton 支持的每个平台都支持上述所有后端。 查看[后端平台支持列表](https://github.com/triton-inference-server/backend/blob/r24.01/docs/backend_platform_support_matrix.md)，了解目标平台支持哪些后端。
+- 了解如何使用[性能分析器](https://github.com/triton-inference-server/client/blob/r24.01/src/c++/perf_analyzer/README.md)和[模型分析器](https://github.com/triton-inference-server/model_analyzer)[优化性能](docs/user_guide/optimization.md)
+- 学习如何在 Triton 中[管理加载和卸载模型](docs/user_guide/model_management.md)
+- 使用[HTTP/REST JSON-based or gRPC protocols](docs/customization_guide/inference_protocols.md#httprest-and-grpc-protocols)直接向 Triton 发送请求
 
-作为部署策略的一部分，您可能希望通过在运行的Triton服务器中[通过加载和卸载模型来显示的管理哪些模型可用](docs_zh-CN/model_management.md)。如果你正在使用Kubernetes进行部署，有一些简单的例子可以说明如何使用Kubernetes和Helm部署Triton: [GCP](deploy/gcp/README.md), [AWS](deploy/aws/README.md), [NVIDIA
-FleetCommand](deploy/fleetcommand/README.md)。
+#### 客户端支持和示例
 
-如果您从以前使用的版本1迁移到版本2，那么[版本1到版本2的迁移信息](docs_zh-CN/v1_to_v2.md)是很有帮助的。
+Triton *客户端*应用程序向 Triton 发送推理和其他请求。[Python and C++ 客户端库](https://github.com/triton-inference-server/client)提供了 API 来简化此通信。
 
-### 开发者文档
+- 查看你[C++](https://github.com/triton-inference-server/client/blob/r24.01/src/c%2B%2B/examples),
+  [Python](https://github.com/triton-inference-server/client/blob/r24.01/src/python/examples),
+  和 [Java](https://github.com/triton-inference-server/client/blob/r24.01/src/java/src/main/java/triton/client/examples)的客户端示例
+- 配置 [HTTP](https://github.com/triton-inference-server/client#http-options)
+  和 [gRPC](https://github.com/triton-inference-server/client#grpc-options)
+  客户端选选项
+- 在[无需任何额外的元数据的HTTP正文](https://github.com/triton-inference-server/server/blob/r24.01/docs/protocol/extension_binary_data.md#raw-binary-request)中将输入数据（例如jpeg图像）直接发送到Triton
 
-* [构建](docs_zh-CN/build.md)
-* [协议和APIs](docs_zh-CN/inference_protocols.md).
-* [后端](https://github.com/triton-inference-server/backend)
-* [存储库代理](docs_zh-CN/repository_agents.md)
-* [测试](docs_zh-CN/test.md)
+### 扩展 Triton
 
-Triton可以[使用Docker构建](docs_zh-CN/build.md#building-triton-with-docker)，也可以[不使用Docker构建](docs_zh-CN/build.md#building-triton-without-docker)。在构建完之后，你应该[测试Triton](docs_zh-CN/test.md)。
+[Triton Inference Server 的架构](docs/user_guide/architecture.md)是专门为模块化和灵活性而设计
 
-也可以[创建一个包含自定义Triton的Docker镜像](docs_zh-CN/compose.md)，包含后端的一个子集。
+- [自定义 Triton Inference Server 容器](docs/customization_guide/compose.md) 以满足您的使用需求
+- 使用[C/C++](https://github.com/triton-inference-server/backend/blob/r24.01/README.md#triton-backend-api)或[Python](https://github.com/triton-inference-server/python_backend)[创建自定义后端](https://github.com/triton-inference-server/backend)
+- 创建 [解耦的后端和模型](docs/user_guide/decoupled_models.md)，可以为请求发送多个响应，也可以不为请求发送任何响应
+- 使用 [Triton 存储库代理](docs/customization_guide/repository_agents.md)添加在模型加载和卸载时运行的功能，例如身份验证、解密或转换
+- 在 [Jetson 和 JetPack](docs/user_guide/jetson.md)上部署Triton
+- [在AWS Inferentia上使用Triton](https://github.com/triton-inference-server/python_backend/tree/main/inferentia)
 
-Triton项目还提供了[Python和C++的客户端库](https://github.com/triton-inference-server/client)，使和服务器的通信变得容易。还有大量的[客户端示例](https://github.com/triton-inference-server/client)演示了如何使用这些库。您还可以开发自己的客户端，使用[HTTP/REST或GRPC协议](docs_zh-CN/inference_protocols.md)直接与Triton通信。还有一个[C API](docs_zh-CN/inference_protocols.md)，可以直接将Triton链接到你的应用程序中。
+### 其他文档
 
-[Triton后端](https://github.com/triton-inference-server/backend)是执行模型的实现。后端可以与深度学习框架对接，如PyTorch、TensorFlow、TensorRT或ONNX Runtime;或者它可以与数据处理框架[DALI](https://github.com/triton-inference-server/dali_backend)对接;或者你可以通过[C/C++](https://github.com/triton-inference-server/backend/blob/main/README.md#triton-backend-api)或[Python](https://github.com/triton-inference-server/python_backend)来[编写自己的后端](https://github.com/triton-inference-server/backend)来扩展Triton。
-
-[Triton存储库代理](docs_zh-CN/repository_agents.md)用新功能扩展了Triton，该功能在模型加载或卸载时运行。当加载模型时，您可以引入自己的代码来执行身份验证、解密、转换或类似的操作。
-
-## 论文和演讲
-
-* [Maximizing Deep Learning Inference Performance with NVIDIA Model
-  Analyzer](https://developer.nvidia.com/blog/maximizing-deep-learning-inference-performance-with-nvidia-model-analyzer/).
-
-* [High-Performance Inferencing at Scale Using the TensorRT Inference
-  Server](https://developer.nvidia.com/gtc/2020/video/s22418).
-
-* [Accelerate and Autoscale Deep Learning Inference on GPUs with
-  KFServing](https://developer.nvidia.com/gtc/2020/video/s22459).
-
-* [Deep into Triton Inference Server: BERT Practical Deployment on
-  NVIDIA GPU](https://developer.nvidia.com/gtc/2020/video/s21736).
-
-* [Maximizing Utilization for Data Center Inference with TensorRT
-  Inference Server](https://on-demand-gtc.gputechconf.com/gtcnew/sessionview.php?sessionName=s9438-maximizing+utilization+for+data+center+inference+with+tensorrt+inference+server).
-
-* [NVIDIA TensorRT Inference Server Boosts Deep Learning
-  Inference](https://devblogs.nvidia.com/nvidia-serves-deep-learning-inference/).
-
-* [GPU-Accelerated Inference for Kubernetes with the NVIDIA TensorRT
-  Inference Server and
-  Kubeflow](https://www.kubeflow.org/blog/nvidia_tensorrt/).
-
-* [Deploying NVIDIA Triton at Scale with MIG and Kubernetes](https://developer.nvidia.com/blog/deploying-nvidia-triton-at-scale-with-mig-and-kubernetes/). 
+- [常见问题](docs/user_guide/faq.md)
+- [用户指南](docs/README.md#user-guide)
+- [定制指南](docs/README.md#customization-guide)
+- [发行说明](https://docs.nvidia.com/deeplearning/triton-inference-server/release-notes/index.html)
+- [GPU、驱动程序和 CUDA 支持列表](https://docs.nvidia.com/deeplearning/dgx/support-matrix/index.html)
 
 ## 贡献
 
-我们非常欢迎对Triton Inference Server的贡献。遵循[CONTRIBUTING.md](CONTRIBUTING.md)中的指南概述提出一个pull请求来做出贡献。如果你有一个后端，客服端，例子或类似的贡献，且没有修改Triton的核心，你可以在[contrib repo](https://github.com/triton-inference-server/contrib)提交PR。
+欢迎对 Triton 推理服务器做出贡献。请查看 [贡献指南](CONTRIBUTING.md) 以了解如何做出贡献。如果您有后端、客户端、示例或类似的贡献，但不修改 Triton 的核心，则应在 [contrib repo](https://github.com/triton-inference-server/contrib) 中提交 PR。
 
-## 报告问题，提出问题
+## 报告问题，提问
 
-我们欢迎任何关于这个项目的反馈，问题或者bug报告。当需要代码方面的帮助时，遵循Stack Overflow (<https://stackoverflow.com/help/mcve>)文档中的流程概述。确保发布的例子如下：
+我们欢迎任何关于这个项目的反馈、问题或bug报告。
+在 [GitHub 上发布问题](https://github.com/triton-inference-server/server/issues)时，
+遵循[Stack Overflow文档](https://stackoverflow.com/help/mcve)中概述的过程。
+确保张贴的示例是：
+- 最小化 - 使用尽可能少的代码，但仍然会产生同样的问题
+- 完整 - 提供再现问题所需的所有部分。检查您是否可以剥离外部依赖关系，并仍然显示问题。我们在再现问题上花费的时间越少，我们就越有时间修复它
+- 可验证的 - 测试您即将提供的代码，以确保它重现问题。删除与您的请求/问题无关的所有其他问题。
 
-* 最小化 – 使用尽可能少的代码任然产生问题。
+对于问题，请使用提供的错误报告和功能请求模板。
 
-* 完整的 – 提供重现问题所需的所有部分。检查是否可以剥离外部依赖项但问题仍然存在。我们花在重现问题的时间越少，解决问题的诗句就越多。
+如有疑问，我们建议您在我们的社区[GitHub 讨论区](https://github.com/triton-inference-server/server/discussions)中发布
 
-* 可验证 – 测试你提供的代码，确保能重现问题。删除与你的请求/问题无关的所有其它问题。
+## 了解更多信息
+
+请参阅[NVIDIA Developer Triton 页面](https://developer.nvidia.com/nvidia-triton-inference-server)
+了解更多信息。
