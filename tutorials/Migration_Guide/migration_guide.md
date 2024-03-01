@@ -1,5 +1,11 @@
 # Migrating to the Triton Inference Server
 
+<div align="center">
+
+English | [简体中文](migration_guide_zh-CN.md)
+
+</div>
+
 Migrating to a new inference stack may seem challenging, but the task can be understood by breaking down the challenges and understanding the best practices. In this guide, we show some of the benefits of using a dedicated inference serving solution like the Triton Inference Server and cover which path may best suit your Triton adoption.
 
 ## Why do we need a dedicated inference solution?
