@@ -32,7 +32,7 @@
 * [快速部署](#quick-deploy)：这是一组关于将模型从首选框架部署到Triton推理服务器的指南。这些指南假设对Triton推理服务器有基本的了解。建议查看入门材料以获得完整的理解。
 * [HuggingFace 指南](./HuggingFace/): 本指南的重点是引导用户使用 Triton 推理服务器部署 HuggingFace 模型的不同方法。
 * [功能指南](./Feature_Guide/)：此文件夹旨在存放Triton的功能特定示例。
-* [迁移指南](./Migration_Guide/migration_guide.md)：从现有解决方案迁移到 Triton Inference Server？了解可能最适合您的用例的总体架构。
+* [迁移指南](./Migration_Guide/migration_guide_zh-CN.md)：从现有解决方案迁移到 Triton Inference Server？了解可能最适合您的用例的总体架构。
 
 ## Triton 推理服务器资源导航
 

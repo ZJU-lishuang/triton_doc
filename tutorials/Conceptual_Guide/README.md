@@ -29,6 +29,12 @@
 
 # Conceptual Guides
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Related Pages | [Server Docs](https://github.com/triton-inference-server/server/tree/main/docs#triton-inference-server-documentation) |
 | ------------ | --------------- |
 
