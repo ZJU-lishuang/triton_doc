@@ -1,7 +1,7 @@
 # Triton 教程
 
 
-对于使用“Tensor in”和“Tensor out”方法进行深度学习推理的用户来说，开始使用Triton可能会导致许多问题。此存储库的目的是让用户熟悉Triton的功能，并提供指导和示例以简化迁移。有关功能说明，请参阅[Triton Inference Server文档][Triton Inference Server 文档](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/index.html).
+对于使用“Tensor in”和“Tensor out”方法进行深度学习推理的用户来说，开始使用Triton可能会导致许多问题。此存储库的目的是让用户熟悉Triton的功能，并提供指导和示例以简化迁移。有关功能说明，请参阅[Triton Inference Server文档](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/index.html).
 
 #### 入门清单
 | [概述视频](https://www.youtube.com/watch?v=NQDtfSi5QF4) | [概念指南: 部署模型](Conceptual_Guide/Part_1-model_deployment/README.md) |
