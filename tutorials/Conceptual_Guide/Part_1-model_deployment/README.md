@@ -28,6 +28,12 @@
 
 # Deploy models using Triton
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Navigate to | [Part 2: Improving Resource Utilization](../Part_2-improving_resource_utilization/) | [Documentation: Model Repository](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_repository.md) | [Documentation: Model Configuration](https://github.com/triton-inference-server/server/blob/main/docs/user_guide/model_configuration.md) |
 | ------------ | --------------- | --------------- | --------------- |
 
