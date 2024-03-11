@@ -29,6 +29,12 @@
 
 # Dynamic Batching & Concurrent Model Execution
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Navigate to | [Part 1: Model Deployment](../Part_1-model_deployment/) | [Part 3: Optimizing Triton Configuration](../Part_3-optimizing_triton_configuration/) |
 | ------------ | --------------- | --------------- |
 
