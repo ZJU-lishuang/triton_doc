@@ -28,6 +28,13 @@
 
 
 # Customizing deployment with Model Analyzer
+
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Navigate to | [Part 2: Improving Resource Utilization](../Part_2-improving_resource_utilization/) | [Part 4: Accelerating Models](../Part_4-inference_acceleration/) |
 | ------------ | --------------- | --------------- |
 
