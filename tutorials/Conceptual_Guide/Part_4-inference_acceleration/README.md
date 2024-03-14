@@ -29,6 +29,12 @@
 
 # Accelerating Inference for Deep Learning Models
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Navigate to | [Part 3: Optimizing Triton Configuration](../Part_3-optimizing_triton_configuration/)  | [Part 5: Building Model Ensembles](../Part_5-Model_Ensembles/) |
 | ------------ | --------------- | --------------- |
 
