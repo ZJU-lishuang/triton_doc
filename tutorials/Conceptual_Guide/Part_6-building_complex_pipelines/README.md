@@ -28,6 +28,12 @@
 
 # Building Complex Pipelines: Stable Diffusion
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 | Navigate to | [Part 5: Building Model Ensembles](../Part_5-Model_Ensembles/)  | [Documentation: BLS](https://github.com/triton-inference-server/python_backend#business-logic-scripting) |
 | ------------ | --------------- | --------------- |
 
