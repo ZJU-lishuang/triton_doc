@@ -28,6 +28,12 @@
 
 # Understanding Data Pipelines
 
+<div align="center">
+
+English | [简体中文](README_zh-CN.md)
+
+</div>
+
 Learning about moving tensors from the client to the backends, and or moving it amongst the backends is a core skill needed to be built by Triton Users. In this tutorial, we will cover the following:
 
 * The API used to move data between the client and server
