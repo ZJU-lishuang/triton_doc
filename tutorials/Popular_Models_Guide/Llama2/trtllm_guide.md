@@ -26,6 +26,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<div align="center">
+
+English | [简体中文](trtllm_guide_zh-CN.md)
+
+</div>
+
 TensorRT-LLM is Nvidia's recommended solution of running Large Language
 Models(LLMs) on Nvidia GPUs. Read more about TensoRT-LLM [here](https://github.com/NVIDIA/TensorRT-LLM)
 and Triton's TensorRTLLM Backend [here](https://github.com/triton-inference-server/tensorrtllm_backend).
