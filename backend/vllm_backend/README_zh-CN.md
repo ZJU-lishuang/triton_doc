@@ -62,7 +62,7 @@ wget -P /opt/tritonserver/backends/vllm https://raw.githubusercontent.com/triton
 
 您可以在[示例](samples)文件夹中看到示例[model_repository](samples/model_repository)。您可以按原样使用它，并通过更改`model.json`中的`model`值来更改模型。 `model.json`表示初始化模型时输入到 vLLM 的 AsyncLLMEngine 的键值字典。您可以在 vLLM 的[arg_utils.py](https://github.com/vllm-project/vllm/blob/main/vllm/engine/arg_utils.py)中查看支持的参数。具体来说，[这里](https://github.com/vllm-project/vllm/blob/ee8217e5bee5860469204ee57077a91138c9af02/vllm/engine/arg_utils.py#L11)和[这里](https://github.com/vllm-project/vllm/blob/ee8217e5bee5860469204ee57077a91138c9af02/vllm/engine/arg_utils.py#L201)。
 
-对于多 GPU 支持，可以在[model.json](samples/model_repository/vllm_model/1/model.json)中指定如tensor_parallel_size的EngineArgs。
+对于多 GPU 支持，可以在[model.json](samples/model_repository/vllm_model/1/model.json)中指定EngineArgs中的参数，如tensor_parallel_size。
 
 注意：在默认设置下，vLLM 会贪婪地消耗高达 90% 的 GPU 内存。示例模型通过将 gpu_memory_utilization 设置为 50% 来更新此行为。您可以使用 gpu_memory_utilization 等字段和[model.json](samples/model_repository/vllm_model/1/model.json)中的其他设置来调整此行为。
 
